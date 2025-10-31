@@ -24,7 +24,7 @@ export interface Session {
 export interface DailyStats {
   date: string;
   totalMl: number;
-  totalAlcohol: number; // in grams
+      totalAlcohol: number; // in milliliters
   entries: AlcoholEntry[];
 }
 

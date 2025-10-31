@@ -150,7 +150,7 @@ export default function History() {
   const calculateDayTotal = (dayEntries: AlcoholEntry[]) => {
     const totalMl = dayEntries.reduce((sum, e) => sum + e.amount, 0);
     const totalAlcohol = dayEntries.reduce(
-      (sum, e) => sum + (e.amount * e.alcoholPercentage / 100 * 0.789),
+      (sum, e) => sum + (e.amount * e.alcoholPercentage / 100),
       0
     );
     return { totalMl, totalAlcohol };
@@ -223,7 +223,7 @@ export default function History() {
                     <div className="text-sm text-gray-600">
                       <span className="font-medium">{totalMl.toFixed(0)} ml</span>
                       {' • '}
-                      <span className="font-medium">{totalAlcohol.toFixed(1)} g alcohol</span>
+                      <span className="font-medium">{totalAlcohol.toFixed(1)} ml alcohol</span>
                       {' • '}
                       <span>{dayEntries.length} {dayEntries.length === 1 ? 'drink' : 'drinks'}</span>
                     </div>
@@ -250,7 +250,7 @@ export default function History() {
                           <div className="text-sm text-gray-600">
                             {entry.amount} ml @ {entry.alcoholPercentage}% ABV
                             {' • '}
-                            {(entry.amount * entry.alcoholPercentage / 100 * 0.789).toFixed(1)} g alcohol
+                            {(entry.amount * entry.alcoholPercentage / 100).toFixed(1)} ml alcohol
                           </div>
                           {entry.notes && (
                             <div className="text-sm text-gray-500 mt-1 italic">{entry.notes}</div>

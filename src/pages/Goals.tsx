@@ -267,7 +267,7 @@ export default function Goals() {
       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
         <h4 className="font-semibold text-gray-900 mb-2">💡 About Standard Drinks</h4>
         <p className="text-sm text-gray-700 mb-3">
-          One standard drink equals <strong>10 grams of pure alcohol</strong>. This helps you track consumption consistently regardless of drink type.
+          One standard drink equals <strong>12.68ml of pure alcohol</strong> (equivalent to 10g). This helps you track consumption consistently regardless of drink type.
         </p>
         <p className="text-xs text-gray-600">
           Examples: 650ml beer (5% ABV) ≈ 2.6 drinks • 30ml whisky (40% ABV) ≈ 0.9 drinks • 150ml wine (12% ABV) ≈ 1.4 drinks

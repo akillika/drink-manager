@@ -7,8 +7,9 @@ import { db } from '../config/firebase';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 
-// Standard drink calculation: 10g of pure alcohol = 1 standard drink
-const STANDARD_DRINK_ALCOHOL_GRAMS = 10;
+// Standard drink calculation: 12.68ml of pure alcohol = 1 standard drink
+// (10g alcohol / 0.789 g/ml density = 12.68ml)
+const STANDARD_DRINK_ALCOHOL_ML = 12.68;
 
 // Modern gradient color palette
 const GRADIENT_COLORS = [
@@ -110,11 +111,11 @@ export default function Dashboard() {
         } as AlcoholEntry);
       });
 
-      const todayTotal = todayEntries.reduce((sum, entry) => sum + entry.amount, 0);
-      const todayAlcohol = todayEntries.reduce(
-        (sum, entry) => sum + (entry.amount * entry.alcoholPercentage / 100 * 0.789),
-        0
-      );
+          const todayTotal = todayEntries.reduce((sum, entry) => sum + entry.amount, 0);
+          const todayAlcohol = todayEntries.reduce(
+            (sum, entry) => sum + (entry.amount * entry.alcoholPercentage / 100),
+            0
+          );
 
       setTodayStats({
         date: format(today, 'yyyy-MM-dd'),
@@ -149,14 +150,14 @@ export default function Dashboard() {
         weekMap.get(dateKey)!.push(entry);
       });
 
-      const weekStatsArray: DailyStats[] = Array.from(weekMap.entries()).map(([date, entries]) => {
-        const totalMl = entries.reduce((sum, e) => sum + e.amount, 0);
-        const totalAlcohol = entries.reduce(
-          (sum, e) => sum + (e.amount * e.alcoholPercentage / 100 * 0.789),
-          0
-        );
-        return { date, totalMl, totalAlcohol, entries };
-      });
+          const weekStatsArray: DailyStats[] = Array.from(weekMap.entries()).map(([date, entries]) => {
+            const totalMl = entries.reduce((sum, e) => sum + e.amount, 0);
+            const totalAlcohol = entries.reduce(
+              (sum, e) => sum + (e.amount * e.alcoholPercentage / 100),
+              0
+            );
+            return { date, totalMl, totalAlcohol, entries };
+          });
 
       setWeekStats(weekStatsArray);
 
@@ -190,10 +191,11 @@ export default function Dashboard() {
     }
   };
 
-  // Calculate standard drinks: (volume in ml * ABV% / 100 * 0.789) / 10g
+  // Calculate standard drinks: (alcohol in ml) / 12.68ml
+  // 1 standard drink = 10g alcohol = 12.68ml alcohol (at 0.789 g/ml density)
   const calculateStandardDrinks = (entry: AlcoholEntry): number => {
-    const alcoholGrams = (entry.amount * entry.alcoholPercentage / 100 * 0.789);
-    return alcoholGrams / STANDARD_DRINK_ALCOHOL_GRAMS;
+    const alcoholMl = (entry.amount * entry.alcoholPercentage / 100);
+    return alcoholMl / STANDARD_DRINK_ALCOHOL_ML;
   };
 
   const loadGoals = async () => {
@@ -699,7 +701,7 @@ export default function Dashboard() {
             <div className="bg-purple-50 rounded-lg p-4 card-hover animate-stagger-2">
               <div className="text-sm text-purple-600 font-medium">Total Alcohol</div>
               <div className="text-2xl font-bold text-purple-900" style={{ animation: 'countUp 0.8s ease-out 0.1s forwards', opacity: 0 }}>
-                {todayStats.totalAlcohol.toFixed(1)} g
+                {todayStats.totalAlcohol.toFixed(1)} ml
               </div>
             </div>
             <div className="bg-green-50 rounded-lg p-4 card-hover animate-stagger-3">
@@ -727,17 +729,17 @@ export default function Dashboard() {
                 <span className="text-gray-700 font-medium">
                   {format(new Date(stat.date), 'EEEE, dd MMM')}
                 </span>
-                <div className="flex gap-4 text-sm">
-                  <span className="text-gray-600">
-                    {stat.totalMl.toFixed(0)} ml
-                  </span>
-                  <span className="text-gray-600">
-                    {stat.totalAlcohol.toFixed(1)} g alcohol
-                  </span>
-                  <span className="text-gray-600">
-                    {stat.entries.length} {stat.entries.length === 1 ? 'drink' : 'drinks'}
-                  </span>
-                </div>
+                    <div className="flex gap-4 text-sm">
+                      <span className="text-gray-600">
+                        {stat.totalMl.toFixed(0)} ml
+                      </span>
+                      <span className="text-gray-600">
+                        {stat.totalAlcohol.toFixed(1)} ml alcohol
+                      </span>
+                      <span className="text-gray-600">
+                        {stat.entries.length} {stat.entries.length === 1 ? 'drink' : 'drinks'}
+                      </span>
+                    </div>
               </div>
             ))}
           </div>

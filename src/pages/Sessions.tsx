@@ -370,7 +370,7 @@ export default function Sessions() {
   const calculateSessionStats = (sessionEntries: AlcoholEntry[]) => {
     const totalMl = sessionEntries.reduce((sum, e) => sum + e.amount, 0);
     const totalAlcohol = sessionEntries.reduce(
-      (sum, e) => sum + (e.amount * e.alcoholPercentage / 100 * 0.789),
+      (sum, e) => sum + (e.amount * e.alcoholPercentage / 100),
       0
     );
     return { totalMl, totalAlcohol, count: sessionEntries.length };
@@ -501,7 +501,7 @@ export default function Sessions() {
                   </div>
                   <div className="bg-purple-50 rounded-lg p-3">
                     <div className="text-xs text-purple-600 font-medium">Total Alcohol</div>
-                    <div className="text-lg font-bold text-purple-900">{stats.totalAlcohol.toFixed(1)} g</div>
+                    <div className="text-lg font-bold text-purple-900">{stats.totalAlcohol.toFixed(1)} ml</div>
                   </div>
                   <div className="bg-green-50 rounded-lg p-3">
                     <div className="text-xs text-green-600 font-medium">Drinks</div>
