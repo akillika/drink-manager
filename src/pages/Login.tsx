@@ -33,8 +33,8 @@ export default function Login() {
         {/* Login Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 animate-scale-in card-hover">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-            <p className="text-gray-500 text-sm">Sign in to access your personal tracker</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome</h2>
+            <p className="text-gray-500 text-sm mb-6">Sign in with Google to track your consumption</p>
           </div>
 
           {/* Google Sign In Button */}
@@ -86,9 +86,14 @@ export default function Login() {
           )}
 
           {/* Info Text */}
-          <p className="mt-6 text-xs text-gray-500 text-center">
-            By signing in, you agree to our terms of service and privacy policy
-          </p>
+          <div className="mt-6 pt-4 border-t border-gray-100">
+            <p className="text-xs text-gray-500 text-center leading-relaxed">
+              <span className="text-gray-600">✨ New here?</span> We'll create a fresh account for you automatically.
+              <span className="block mt-1">
+                <span className="text-gray-600">🔒</span> Your data stays private and secure—only you can access it.
+              </span>
+            </p>
+          </div>
         </div>
 
         {/* Features Preview */}
