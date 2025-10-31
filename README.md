@@ -190,6 +190,114 @@ git status
 git add -n .
 ```
 
+## Deployment to Vercel
+
+This project is configured for easy deployment to Vercel.
+
+### Quick Deploy
+
+#### Option A: Via Vercel Dashboard (Recommended - Easiest)
+
+1. **Push your code to GitHub:**
+   ```bash
+   git add .
+   git commit -m "Ready for deployment"
+   git push origin main
+   ```
+
+2. **Deploy via Dashboard:**
+   - Go to [vercel.com](https://vercel.com) and sign in
+   - Click **"Add New..."** → **"Project"**
+   - Import your GitHub repository
+   - Vercel will auto-detect Vite settings
+   - Add environment variables (see below)
+   - Click **"Deploy"**
+
+#### Option B: Via Vercel CLI
+
+1. **Install Vercel CLI** (if not already installed):
+   ```bash
+   npm i -g vercel
+   ```
+
+2. **Deploy from command line**:
+   ```bash
+   vercel
+   ```
+   Follow the prompts to link your project to Vercel.
+
+   **Note:** If you get SSL certificate errors, use Option A (Dashboard) instead.
+
+### Setting Environment Variables in Vercel
+
+**Important**: You need to add your Firebase environment variables in Vercel:
+
+#### Option 1: Via Vercel Dashboard (Recommended)
+1. Go to your project on [Vercel Dashboard](https://vercel.com/dashboard)
+2. Click on **Settings** → **Environment Variables**
+3. Add each variable with the exact names:
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_AUTH_DOMAIN`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_FIREBASE_STORAGE_BUCKET`
+   - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+   - `VITE_FIREBASE_APP_ID`
+   - `VITE_FIREBASE_MEASUREMENT_ID`
+4. Set them for **Production**, **Preview**, and **Development** environments
+5. Click **Save**
+6. **Redeploy** your project for changes to take effect
+
+#### Option 2: Via Vercel CLI
+```bash
+# Add environment variables one by one
+vercel env add VITE_FIREBASE_API_KEY
+vercel env add VITE_FIREBASE_AUTH_DOMAIN
+vercel env add VITE_FIREBASE_PROJECT_ID
+vercel env add VITE_FIREBASE_STORAGE_BUCKET
+vercel env add VITE_FIREBASE_MESSAGING_SENDER_ID
+vercel env add VITE_FIREBASE_APP_ID
+vercel env add VITE_FIREBASE_MEASUREMENT_ID
+
+# After adding all variables, redeploy
+vercel --prod
+```
+
+#### Getting Your Firebase Credentials
+If you need to retrieve your Firebase config again:
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Select your project
+3. Click the gear icon → **Project Settings**
+4. Scroll to **Your apps** section
+5. Copy the values from the config object
+
+### After Deployment
+
+1. **Update Firebase Authorized Domains**:
+   - Go to Firebase Console → Authentication → Settings
+   - Under "Authorized domains", add your Vercel domain:
+     - `your-project.vercel.app` (automatic preview domain)
+     - `your-custom-domain.com` (if you added one)
+
+2. **Verify Environment Variables**:
+   - Check your deployment logs in Vercel
+   - If you see "Missing Firebase configuration" error, the env vars aren't set correctly
+
+3. **Test Your Deployment**:
+   - Visit your Vercel URL
+   - Try signing in with Google
+   - Verify the app works correctly
+
+### Troubleshooting
+
+**Issue**: "Missing Firebase configuration" error
+- **Solution**: Ensure all `VITE_FIREBASE_*` variables are set in Vercel and redeploy
+
+**Issue**: Google Sign-In not working
+- **Solution**: Add your Vercel domain to Firebase Authorized Domains
+
+**Issue**: Build fails
+- **Solution**: Check build logs, ensure `npm run build` works locally first
+
 ## License
 
 MIT

@@ -38,7 +38,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 // Custom label for pie chart
-const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
+const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
   const RADIAN = Math.PI / 180;
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -584,7 +584,7 @@ export default function Dashboard() {
                   margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 >
                   <defs>
-                    {getDrinkTypeData().map((entry, index) => (
+                    {getDrinkTypeData().map((_entry, index) => (
                       <linearGradient key={`barGradient-${index}`} id={`barGradient-${index}`} x1="0" y1="0" x2="1" y2="0">
                         <stop offset="0%" stopColor={GRADIENT_COLORS[index % GRADIENT_COLORS.length].from} stopOpacity={0.9}/>
                         <stop offset="100%" stopColor={GRADIENT_COLORS[index % GRADIENT_COLORS.length].to} stopOpacity={0.9}/>
@@ -612,7 +612,7 @@ export default function Dashboard() {
                     animationDuration={1000}
                     animationBegin={0}
                   >
-                    {getDrinkTypeData().map((entry, index) => (
+                    {getDrinkTypeData().map((_entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={`url(#barGradient-${index})`}
@@ -834,7 +834,7 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
                   <defs>
-                    {getDayOfWeekData().map((entry, index) => (
+                    {getDayOfWeekData().map((_entry, index) => (
                       <linearGradient key={`gradient-${index}`} id={`gradient-${index}`} x1="0" y1="0" x2="1" y2="1">
                         <stop offset="0%" stopColor={GRADIENT_COLORS[index % GRADIENT_COLORS.length].from} stopOpacity={1}/>
                         <stop offset="100%" stopColor={GRADIENT_COLORS[index % GRADIENT_COLORS.length].to} stopOpacity={0.8}/>
@@ -854,7 +854,7 @@ export default function Dashboard() {
                     animationBegin={0}
                     animationDuration={800}
                   >
-                    {getDayOfWeekData().map((entry, index) => (
+                    {getDayOfWeekData().map((_entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={`url(#gradient-${index})`}

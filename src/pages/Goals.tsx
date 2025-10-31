@@ -93,6 +93,7 @@ export default function Goals() {
           });
           setWeeklyGoal({
             id: newGoal.id,
+            userId: user.uid,
             type: 'weekly',
             limit,
             isActive,
@@ -114,6 +115,7 @@ export default function Goals() {
           });
           setMonthlyGoal({
             id: newGoal.id,
+            userId: user.uid,
             type: 'monthly',
             limit,
             isActive,

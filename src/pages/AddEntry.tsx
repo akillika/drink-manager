@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../config/firebase';
 import { collection, addDoc, Timestamp, query, where, getDocs, orderBy, updateDoc, doc } from 'firebase/firestore';
-import { AlcoholEntry, Session, DrinkLibraryItem } from '../types';
+import { Session, DrinkLibraryItem } from '../types';
 import { format, differenceInMinutes } from 'date-fns';
 
 // Common drink presets with Indian standard serving sizes (ml)
@@ -75,7 +75,6 @@ export default function AddEntry() {
   // Drink Library state
   const [drinkLibrary, setDrinkLibrary] = useState<DrinkLibraryItem[]>([]);
   const [selectedLibraryDrink, setSelectedLibraryDrink] = useState<string>('');
-  const [showLibraryDropdown, setShowLibraryDropdown] = useState(false);
 
   const handleTypeChange = (newType: string) => {
     setType(newType);
@@ -162,10 +161,8 @@ export default function AddEntry() {
       } else if (drink.typicalServingSizeOz) {
         setUseOz(false); // Still use ml as default, convert from oz
         setAmountMl(drink.typicalServingSizeOz * OZ_TO_ML);
-        setAmountOz(drink.typicalServingSizeOz);
-      }
-      
-      setShowLibraryDropdown(false);
+          setAmountOz(drink.typicalServingSizeOz);
+        }
     }
   };
 
@@ -404,7 +401,7 @@ export default function AddEntry() {
               </Link>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                {drinkLibrary.slice(0, 8).map((drink, index) => (
+                {drinkLibrary.slice(0, 8).map((drink) => (
                     <button
                       key={drink.id}
                       type="button"
