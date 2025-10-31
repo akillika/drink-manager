@@ -31,4 +31,6 @@ dist-ssr
 
 # Vercel
 .vercel
+vercel.json
+.vercel-env-setup.sh
 
