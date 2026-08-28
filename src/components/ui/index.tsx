@@ -295,33 +295,62 @@ export function Ring({
 }
 
 // ---- StatCard — a real app-like stat tile ------------------------
+type StatAccent = 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'pink' | 'none';
+
+const STAT_STYLE: Record<StatAccent, { bg: string; num: string; icon: string; label: string }> = {
+  blue:   { bg: 'bg-[#eaf2fb] dark:bg-[#1c2a3e]', num: 'text-[#1e4785]  dark:text-[#a9c4ea]', icon: 'bg-[#305a9a] text-white', label: 'text-[#305a9a] dark:text-[#a9c4ea]' },
+  green:  { bg: 'bg-[#e9f2e6] dark:bg-[#1a2b1f]', num: 'text-[#2a5c2a]  dark:text-[#a5cfa8]', icon: 'bg-[#3f7a3f] text-white', label: 'text-[#3f7a3f] dark:text-[#a5cfa8]' },
+  amber:  { bg: 'bg-[#f5ecdd] dark:bg-[#302512]', num: 'text-[#764a10]  dark:text-[#d8b276]', icon: 'bg-[#8e5d17] text-white', label: 'text-[#8e5d17] dark:text-[#d8b276]' },
+  red:    { bg: 'bg-[#f6e6e3] dark:bg-[#331915]', num: 'text-[#8a2721]  dark:text-[#e5a49c]', icon: 'bg-[#9c2e2e] text-white', label: 'text-[#9c2e2e] dark:text-[#e5a49c]' },
+  purple: { bg: 'bg-[#efe7f4] dark:bg-[#251b31]', num: 'text-[#5a367a]  dark:text-[#c3a2df]', icon: 'bg-[#6a3f8c] text-white', label: 'text-[#6a3f8c] dark:text-[#c3a2df]' },
+  pink:   { bg: 'bg-[#f5e5ec] dark:bg-[#331c26]', num: 'text-[#8a3861]  dark:text-[#e2a3bf]', icon: 'bg-[#a45078] text-white', label: 'text-[#a45078] dark:text-[#e2a3bf]' },
+  none:   { bg: 'bg-paper2', num: 'text-ink', icon: 'bg-paper3 text-ink2', label: 'text-ink3' },
+};
+
 export function StatCard({
-  label, value, unit, hint, accent, className,
+  label, value, unit, hint, accent = 'none', icon, className, delta,
 }: {
   label: ReactNode; value: ReactNode; unit?: ReactNode; hint?: ReactNode;
-  accent?: 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'pink' | 'none';
+  accent?: StatAccent;
+  icon?: ReactNode;
+  delta?: ReactNode;
   className?: string;
 }) {
-  const stripe = accent && accent !== 'none' ? {
-    blue:   'before:bg-[#305a9a]',
-    green:  'before:bg-[#3f7a3f]',
-    amber:  'before:bg-[#8e5d17]',
-    red:    'before:bg-[#9c2e2e]',
-    purple: 'before:bg-[#6a3f8c]',
-    pink:   'before:bg-[#a45078]',
-  }[accent] : '';
+  const s = STAT_STYLE[accent];
   return (
-    <div className={cx(
-      'relative bg-paper2 border border-rule rounded-lg p-5 overflow-hidden',
-      'before:absolute before:left-0 before:top-0 before:bottom-0 before:w-0.5', stripe,
-      className,
-    )}>
-      <div className="text-2xs uppercase tracking-[0.06em] text-ink3 font-medium mb-2">{label}</div>
+    <div className={cx('relative rounded-xl p-5 border border-rule/70', s.bg, className)}>
+      <div className="flex items-center justify-between mb-3">
+        <div className={cx('text-2xs uppercase tracking-[0.08em] font-semibold', s.label)}>{label}</div>
+        {icon && (
+          <span className={cx('inline-flex items-center justify-center w-7 h-7 rounded-full shrink-0', s.icon)}>
+            {icon}
+          </span>
+        )}
+      </div>
       <div className="flex items-baseline gap-1.5">
-        <div className="text-3xl font-medium text-ink tabular tracking-[-0.02em]">{value}</div>
-        {unit && <div className="text-xs text-ink3 font-mono">{unit}</div>}
+        <div className={cx('text-[32px] leading-none font-semibold tabular tracking-[-0.02em]', s.num)}>{value}</div>
+        {unit && <div className="text-sm text-ink3 font-mono">{unit}</div>}
       </div>
       {hint && <div className="text-2xs text-ink3 mt-2 tabular">{hint}</div>}
+      {delta && <div className="text-2xs mt-2">{delta}</div>}
+    </div>
+  );
+}
+
+// ---- Colored callout (tip / insight) -----------------------------
+export function Callout({
+  tone = 'blue', title, children,
+}: { tone?: 'blue' | 'green' | 'amber' | 'purple'; title?: ReactNode; children: ReactNode }) {
+  const bg = {
+    blue:   'bg-[#eaf2fb] dark:bg-[#1c2a3e] text-[#1e4785] dark:text-[#a9c4ea] border-[#305a9a]/20',
+    green:  'bg-[#e9f2e6] dark:bg-[#1a2b1f] text-[#2a5c2a] dark:text-[#a5cfa8] border-[#3f7a3f]/20',
+    amber:  'bg-[#f5ecdd] dark:bg-[#302512] text-[#764a10] dark:text-[#d8b276] border-[#8e5d17]/20',
+    purple: 'bg-[#efe7f4] dark:bg-[#251b31] text-[#5a367a] dark:text-[#c3a2df] border-[#6a3f8c]/20',
+  }[tone];
+  return (
+    <div className={cx('rounded-lg border p-3.5 text-xs leading-[1.55]', bg)}>
+      {title && <div className="font-semibold mb-1">{title}</div>}
+      <div>{children}</div>
     </div>
   );
 }
