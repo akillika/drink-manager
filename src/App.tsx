@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Layout from './components/Layout';
@@ -9,7 +10,16 @@ import Sessions from './pages/Sessions';
 import DrinkLibrary from './pages/DrinkLibrary';
 import Goals from './pages/Goals';
 
+const LS_THEME = 'dm.theme';
+
 function App() {
+  useEffect(() => {
+    const stored = localStorage.getItem(LS_THEME);
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const initial = stored === 'light' || stored === 'dark' ? stored : (prefersDark ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dark', initial === 'dark');
+  }, []);
+
   return (
     <AuthProvider>
       <Router>
@@ -38,4 +48,3 @@ function App() {
 }
 
 export default App;
-

@@ -34,3 +34,6 @@ dist-ssr
 vercel.json
 .vercel-env-setup.sh
 
+
+# Claude Code local config
+.claude/

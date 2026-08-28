@@ -5,6 +5,7 @@ import { AlcoholEntry, Session } from '../types';
 import { db } from '../config/firebase';
 import { collection, query, orderBy, getDocs, deleteDoc, doc, where } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
+import { Page, PageHeader, Card, Empty, Button, Badge, IconClock, IconTrash, IconPlus, cx } from '../components/ui';
 
 export default function History() {
   const { user } = useAuth();
@@ -14,74 +15,34 @@ export default function History() {
   const [filter, setFilter] = useState<'all' | 'week' | 'month'>('all');
 
   useEffect(() => {
-    if (user) {
-      loadEntries();
-    }
+    if (user) loadEntries();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, user]);
 
   const loadEntries = async () => {
     if (!user) return;
     try {
       setLoading(true);
-      console.log('Loading entries for user:', user.uid);
-      
-      // Query with userId (no orderBy to avoid composite index requirement)
-      // We'll sort client-side instead
-      const entriesQuery = query(
-        collection(db, 'entries'),
-        where('userId', '==', user.uid)
-      );
-
+      const entriesQuery = query(collection(db, 'entries'), where('userId', '==', user.uid));
       const snapshot = await getDocs(entriesQuery);
-      console.log('Query returned', snapshot.size, 'documents');
-      
       const loadedEntries: AlcoholEntry[] = [];
-
       snapshot.forEach((docSnapshot) => {
         const data = docSnapshot.data();
-        console.log('Entry data:', { id: docSnapshot.id, userId: data.userId, type: data.type });
-        
-        const entry: AlcoholEntry = {
-          id: docSnapshot.id,
-          ...data,
-          date: data.date.toDate(),
-        } as AlcoholEntry;
-
-        // Ensure entry belongs to current user (extra safety check)
-        if (entry.userId !== user.uid) {
-          console.log('Skipping entry - userId mismatch:', entry.userId, 'vs', user.uid);
-          return; // Skip entries that don't belong to this user
-        }
-
-        // Apply client-side filter for date ranges
+        const entry: AlcoholEntry = { id: docSnapshot.id, ...data, date: data.date.toDate() } as AlcoholEntry;
+        if (entry.userId !== user.uid) return;
         if (filter !== 'all') {
           const now = new Date();
-          let startDate: Date;
-          
-          if (filter === 'week') {
-            startDate = new Date(now);
-            startDate.setDate(startDate.getDate() - 7);
-          } else {
-            startDate = new Date(now);
-            startDate.setMonth(startDate.getMonth() - 1);
-          }
-
-          if (entry.date >= startDate) {
-            loadedEntries.push(entry);
-          }
+          const startDate = new Date(now);
+          if (filter === 'week') startDate.setDate(startDate.getDate() - 7);
+          else startDate.setMonth(startDate.getMonth() - 1);
+          if (entry.date >= startDate) loadedEntries.push(entry);
         } else {
           loadedEntries.push(entry);
         }
       });
-
-      console.log('Loaded', loadedEntries.length, 'entries after filtering');
-      
-      // Sort by date descending (most recent first)
       loadedEntries.sort((a, b) => b.date.getTime() - a.date.getTime());
-      
       setEntries(loadedEntries);
 
-      // Load sessions for reference
       const sessionsQuery = query(
         collection(db, 'sessions'),
         where('userId', '==', user.uid),
@@ -102,14 +63,12 @@ export default function History() {
       setSessions(loadedSessions);
     } catch (error: any) {
       console.error('Error loading entries:', error);
-      // Check if it's a missing index error
       if (error?.code === 'failed-precondition' || error?.message?.includes('index')) {
-        console.error('Firestore index required. The error should provide a link to create the index.');
         alert(`Firestore Query Error: ${error.message}\n\nYou may need to create a composite index. Check the browser console for the link.`);
       } else {
-        alert(`Error loading entries: ${error?.message || 'Unknown error'}\n\nPlease check the browser console for details.`);
+        alert(`Error loading entries: ${error?.message || 'Unknown error'}`);
       }
-      setEntries([]); // Set empty array on error
+      setEntries([]);
     } finally {
       setLoading(false);
     }
@@ -122,10 +81,7 @@ export default function History() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this entry?')) {
-      return;
-    }
-
+    if (!confirm('Delete this entry?')) return;
     try {
       await deleteDoc(doc(db, 'entries', id));
       setEntries(entries.filter((e) => e.id !== id));
@@ -139,9 +95,7 @@ export default function History() {
     const grouped = new Map<string, AlcoholEntry[]>();
     entries.forEach((entry) => {
       const dateKey = format(entry.date, 'yyyy-MM-dd');
-      if (!grouped.has(dateKey)) {
-        grouped.set(dateKey, []);
-      }
+      if (!grouped.has(dateKey)) grouped.set(dateKey, []);
       grouped.get(dateKey)!.push(entry);
     });
     return grouped;
@@ -149,131 +103,116 @@ export default function History() {
 
   const calculateDayTotal = (dayEntries: AlcoholEntry[]) => {
     const totalMl = dayEntries.reduce((sum, e) => sum + e.amount, 0);
-    const totalAlcohol = dayEntries.reduce(
-      (sum, e) => sum + (e.amount * e.alcoholPercentage / 100),
-      0
-    );
+    const totalAlcohol = dayEntries.reduce((sum, e) => sum + (e.amount * e.alcoholPercentage / 100), 0);
     return { totalMl, totalAlcohol };
   };
 
+  const filterBtn = (v: 'all' | 'week' | 'month', label: string) => (
+    <button
+      onClick={() => setFilter(v)}
+      className={cx(
+        'h-8 px-3 text-xs font-medium transition-colors border-r border-rule last:border-r-0',
+        filter === v ? 'bg-paper3 text-ink' : 'text-ink3 hover:text-ink hover:bg-paper3',
+      )}
+    >
+      {label}
+    </button>
+  );
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-gray-500">Loading...</div>
-      </div>
+      <Page>
+        <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
+      </Page>
     );
   }
 
   const groupedEntries = groupEntriesByDate(entries);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center animate-fade-in-down">
-        <h2 className="text-3xl font-bold text-gray-900">History</h2>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-md button-bounce transition-all duration-200 hover:scale-105 active:scale-95 ${
-              filter === 'all'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setFilter('week')}
-            className={`px-4 py-2 rounded-md button-bounce transition-all duration-200 hover:scale-105 active:scale-95 ${
-              filter === 'week'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Last Week
-          </button>
-          <button
-            onClick={() => setFilter('month')}
-            className={`px-4 py-2 rounded-md button-bounce transition-all duration-200 hover:scale-105 active:scale-95 ${
-              filter === 'month'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Last Month
-          </button>
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        eyebrow="Log"
+        title="History"
+        description="Every drink you've logged, grouped by day."
+        actions={
+          <>
+            <div className="inline-flex border border-rule rounded-md overflow-hidden">
+              {filterBtn('all', 'All time')}
+              {filterBtn('week', 'Last week')}
+              {filterBtn('month', 'Last month')}
+            </div>
+            <Link to="/add">
+              <Button variant="primary"><IconPlus /> Log entry</Button>
+            </Link>
+          </>
+        }
+      />
 
       {groupedEntries.size === 0 ? (
-        <div className="bg-white rounded-lg shadow p-8 text-center">
-          <p className="text-gray-500">No entries found</p>
-        </div>
+        <Empty
+          title="Nothing to show yet"
+          description="Log your first entry and it'll appear here."
+          action={<Link to="/add"><Button variant="primary"><IconPlus /> Log entry</Button></Link>}
+        />
       ) : (
-            <div className="space-y-4">
-              {Array.from(groupedEntries.entries())
-                .sort((a, b) => b[0].localeCompare(a[0]))
-                .map(([date, dayEntries], index) => {
-                  const { totalMl, totalAlcohol } = calculateDayTotal(dayEntries);
-                  return (
-                    <div key={date} className="bg-white rounded-lg shadow p-6 card-hover animate-fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800">
+        <div className="space-y-4">
+          {Array.from(groupedEntries.entries())
+            .sort((a, b) => b[0].localeCompare(a[0]))
+            .map(([date, dayEntries]) => {
+              const { totalMl, totalAlcohol } = calculateDayTotal(dayEntries);
+              return (
+                <Card key={date} padded={false} className="rise">
+                  <div className="flex items-baseline justify-between px-5 py-4 border-b border-rule">
+                    <h3 className="text-sm font-medium text-ink">
                       {format(new Date(date), 'EEEE, dd MMMM yyyy')}
                     </h3>
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium">{totalMl.toFixed(0)} ml</span>
-                      {' • '}
-                      <span className="font-medium">{totalAlcohol.toFixed(1)} ml alcohol</span>
-                      {' • '}
+                    <div className="text-xs font-mono tabular text-ink3 flex gap-4">
+                      <span>{totalMl.toFixed(0)} ml</span>
+                      <span>{totalAlcohol.toFixed(1)} ml pure</span>
                       <span>{dayEntries.length} {dayEntries.length === 1 ? 'drink' : 'drinks'}</span>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                        {dayEntries.map((entry, entryIndex) => (
-                          <div
-                            key={entry.id}
-                            className="flex justify-between items-start p-3 bg-gray-50 rounded card-hover transition-all duration-200 hover:bg-gray-100 animate-fade-in-up"
-                            style={{ animationDelay: `${(index * 0.1) + (entryIndex * 0.05)}s` }}
-                          >
-                        <div className="flex-1">
+                  <div className="divide-y divide-rule">
+                    {dayEntries.map((entry) => (
+                      <div key={entry.id} className="flex items-start justify-between px-5 py-3.5 hover:bg-paper3/40 transition-colors">
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-gray-900">{entry.type}</span>
+                            <span className="text-sm text-ink font-medium">{entry.type}</span>
                             {entry.sessionId && getSessionName(entry.sessionId) && (
-                              <Link
-                                to="/sessions"
-                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 hover:bg-indigo-200"
-                              >
-                                ⏰ {getSessionName(entry.sessionId)}
+                              <Link to="/sessions">
+                                <Badge tone="neutral" className="!normal-case tracking-normal">
+                                  <IconClock width={10} height={10} /> {getSessionName(entry.sessionId)}
+                                </Badge>
                               </Link>
                             )}
                           </div>
-                          <div className="text-sm text-gray-600">
-                            {entry.amount} ml @ {entry.alcoholPercentage}% ABV
-                            {' • '}
-                            {(entry.amount * entry.alcoholPercentage / 100).toFixed(1)} ml alcohol
+                          <div className="text-xs text-ink3 font-mono tabular">
+                            {entry.amount} ml · {entry.alcoholPercentage}% ABV · {(entry.amount * entry.alcoholPercentage / 100).toFixed(1)} ml pure
                           </div>
                           {entry.notes && (
-                            <div className="text-sm text-gray-500 mt-1 italic">{entry.notes}</div>
+                            <div className="text-xs text-ink3 mt-1">{entry.notes}</div>
                           )}
-                          <div className="text-xs text-gray-400 mt-1">
-                            {format(entry.date, 'HH:mm')}
-                          </div>
                         </div>
-                        <button
-                          onClick={() => entry.id && handleDelete(entry.id)}
-                          className="ml-4 text-red-600 hover:text-red-800 text-sm font-medium button-bounce transition-all duration-200 hover:scale-110 active:scale-95"
-                        >
-                          Delete
-                        </button>
+                        <div className="flex items-center gap-3 ml-4 shrink-0">
+                          <span className="text-xs font-mono tabular text-ink3">{format(entry.date, 'HH:mm')}</span>
+                          <button
+                            onClick={() => entry.id && handleDelete(entry.id)}
+                            className="p-1.5 rounded-md text-ink3 hover:text-danger hover:bg-paper3 transition-colors"
+                            aria-label="Delete"
+                            title="Delete"
+                          >
+                            <IconTrash />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
-                </div>
+                </Card>
               );
             })}
         </div>
       )}
-    </div>
+    </Page>
   );
 }
-

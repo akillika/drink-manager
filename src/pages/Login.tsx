@@ -1,17 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { Button, IconGoogle, IconRefresh } from '../components/ui';
 
+/**
+ * The Ledger. A login page that behaves like the inside cover of a private
+ * drinking journal. Warm paper, editorial masthead/footer, a sample ledger
+ * with entries that get "written in" on load, a hand-drawn glass that fills
+ * with ink, and a small living time in the top rail.
+ */
 export default function Login() {
   const { signInWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [clock, setClock] = useState<string>('');
+
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      const h = (now.getUTCHours() + 5) % 24;
+      const rawMin = now.getUTCMinutes() + 30;
+      const min = rawMin % 60;
+      const hh = String(rawMin >= 60 ? (h + 1) % 24 : h).padStart(2, '0');
+      const mm = String(min).padStart(2, '0');
+      setClock(`${hh}:${mm} IST`);
+    };
+    tick();
+    const id = window.setInterval(tick, 15000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
       setError(null);
       await signInWithGoogle();
-      // Email check will happen in ProtectedRoute after auth state updates
     } catch (err: any) {
       console.error('Sign in error:', err);
       setError(err.message || 'Failed to sign in. Please try again.');
@@ -20,99 +42,197 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4 gradient-animated">
-      <div className="max-w-md w-full animate-fade-in">
-        {/* Logo/App Name */}
-        <div className="text-center mb-8 animate-fade-in-down animate-float">
-          <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-2">
-            🍺 Alcohol Tracker
-          </h1>
-          <p className="text-gray-600 text-sm">Track your consumption, stay mindful</p>
-        </div>
+    <div className="min-h-screen bg-paper login-paper flex flex-col">
+      {/* Slim masthead */}
+      <div className="w-full flex items-center justify-between px-6 sm:px-10 py-5 text-2xs font-mono uppercase tracking-[0.14em] text-ink3">
+        <span>Drink Manager · Vol. I</span>
+        <span className="hidden sm:inline">A private ledger</span>
+        <span className="hidden sm:inline tabular">
+          {clock ? clock : 'Est. MMXXVI'}
+        </span>
+      </div>
 
-        {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 animate-scale-in card-hover">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome</h2>
-            <p className="text-gray-500 text-sm mb-6">Sign in with Google to track your consumption</p>
-          </div>
+      <div className="w-full h-px bg-rule" />
 
-          {/* Google Sign In Button */}
-          <button
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-gray-300 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group shadow-sm button-bounce hover:scale-105 active:scale-95"
+      {/* Book spread */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1.15fr_1px_0.85fr] max-w-[1200px] mx-auto w-full">
+        {/* Left page */}
+        <section className="p-8 sm:p-14 lg:pr-16 flex flex-col">
+          {/* Hand-drawn glass motif — fill draws in on mount */}
+          <svg
+            viewBox="0 0 120 160"
+            className="w-14 h-auto text-ink mb-10 ink-in"
+            style={{ animationDelay: '80ms' }}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
           >
-            {loading ? (
-              <>
-                <svg className="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span className="text-gray-700 font-medium">Signing in...</span>
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-                <span className="text-gray-700 font-medium group-hover:text-indigo-600 transition-colors">
-                  Continue with Google
-                </span>
-              </>
-            )}
-          </button>
+            <path d="M25 20 L95 20 L82 90 A28 28 0 0 1 38 90 Z" />
+            <path d="M60 118 L60 148" />
+            <path d="M36 148 L84 148" />
+            <path
+              d="M31 65 C 45 62, 75 62, 89 65"
+              className="glass-fill"
+              pathLength={60}
+              opacity="0"
+            />
+          </svg>
 
-          {/* Error Message */}
-          {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600 text-center">{error}</p>
-            </div>
-          )}
+          <h1
+            className="font-serif text-ink text-[42px] sm:text-[56px] lg:text-[72px] leading-[1.0] tracking-[-0.03em] font-medium max-w-[11ch] ink-in"
+            style={{ animationDelay: '180ms' }}
+          >
+            A private ledger<br />
+            of what you<br />
+            <span className="italic text-ink">drink.</span>
+          </h1>
 
-          {/* Info Text */}
-          <div className="mt-6 pt-4 border-t border-gray-100">
-            <p className="text-xs text-gray-500 text-center leading-relaxed">
-              <span className="text-gray-600">✨ New here?</span> We'll create a fresh account for you automatically.
-              <span className="block mt-1">
-                <span className="text-gray-600">🔒</span> Your data stays private and secure—only you can access it.
+          <p
+            className="mt-8 text-md text-ink2 max-w-md leading-[1.55] ink-in"
+            style={{ animationDelay: '360ms' }}
+          >
+            No streaks, no shame, no scoreboard. A quiet accounting of what you had,
+            when, and how much. Kept only for you.
+          </p>
+
+          {/* Sample ledger */}
+          <div className="mt-12 lg:mt-16">
+            <div
+              className="flex items-baseline justify-between mb-3 ink-in"
+              style={{ animationDelay: '480ms' }}
+            >
+              <span className="text-2xs font-mono uppercase tracking-[0.12em] text-ink3">
+                Sample page
               </span>
-            </p>
+              <span className="text-2xs font-mono uppercase tracking-[0.12em] text-ink4">
+                fri, 22 aug
+              </span>
+            </div>
+            <div className="border-t border-b border-rule">
+              <LedgerRow time="18:42" drink="Old Fashioned" amount="60 ml" abv="40%" pure="24 ml" delay="580ms" />
+              <LedgerRow time="19:15" drink="Porter"        amount="440 ml" abv="4.8%" pure="21 ml" delay="700ms" />
+              <LedgerRow time="20:03" drink="House red"     amount="150 ml" abv="12.5%" pure="19 ml" delay="820ms" />
+              <LedgerRow time="21:47" drink="Water"         amount="500 ml" abv="—"     pure="0 ml"  delay="940ms" muted />
+            </div>
+            <div
+              className="flex items-center justify-between mt-3 text-2xs font-mono uppercase tracking-[0.12em] ink-in"
+              style={{ animationDelay: '1080ms' }}
+            >
+              <span className="text-ink3">total</span>
+              <span className="text-ink tabular">64 ml pure · 5.0 std</span>
+            </div>
           </div>
-        </div>
 
-        {/* Features Preview */}
-        <div className="mt-8 grid grid-cols-3 gap-4 text-center">
-          <div className="bg-white/50 backdrop-blur-sm rounded-lg p-3 border border-gray-100">
-            <div className="text-2xl mb-1">📊</div>
-            <div className="text-xs font-medium text-gray-700">Track</div>
+          {/* Footer marginalia */}
+          <p
+            className="mt-auto pt-14 lg:pt-20 font-serif italic text-ink3 text-[15px] leading-[1.55] max-w-md ink-in"
+            style={{ animationDelay: '1240ms' }}
+          >
+            "A number is easier to argue with than a memory."
+          </p>
+        </section>
+
+        {/* Center hairline */}
+        <div className="hidden lg:block bg-rule w-px" />
+
+        {/* Right page */}
+        <section className="p-8 sm:p-14 lg:pl-16 flex flex-col justify-center min-h-[540px] border-t border-rule lg:border-t-0">
+          <div className="max-w-sm ink-in" style={{ animationDelay: '260ms' }}>
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-2xs font-mono uppercase tracking-[0.12em] text-ink3">
+                Chapter one
+              </span>
+              <span className="flex-1 h-px bg-rule" />
+              <span className="text-2xs font-mono uppercase tracking-[0.12em] text-ink4">
+                Sign in
+              </span>
+            </div>
+            <h2 className="font-serif text-ink text-[36px] leading-[1.05] tracking-[-0.02em] font-medium">
+              Open the book.
+            </h2>
+            <p className="mt-3 text-sm text-ink2 leading-[1.55]">
+              Signing in creates a private ledger under your Google account.
+              Only you can read from it or write to it.
+            </p>
+
+            <div className="mt-8">
+              <button
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+                className="group w-full inline-flex items-center justify-between h-12 px-4 rounded-md bg-paper2 border border-rule hover:border-ink2 hover:bg-paper3 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <span className="flex items-center gap-3">
+                  {loading ? <IconRefresh className="animate-spin text-ink2" /> : <IconGoogle width={16} height={16} />}
+                  <span className="text-ink text-sm font-medium">
+                    {loading ? 'Opening…' : 'Continue with Google'}
+                  </span>
+                </span>
+                <span className="text-ink3 text-2xs font-mono tabular tracking-[0.06em] group-hover:text-ink transition-colors">
+                  Return ↵
+                </span>
+              </button>
+
+              {error && (
+                <div className="mt-3 text-xs text-danger px-3 py-2 rounded-md border border-rule2">
+                  {error}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-10 border-t border-rule pt-5 grid gap-2.5 text-xs text-ink3">
+              <FootnoteRow label="No streaks" hint="Numbers, not scores" />
+              <FootnoteRow label="No sharing" hint="Data stays on your account" />
+              <FootnoteRow label="No ads or trackers" hint="Loaded once, then quiet" />
+            </div>
+
+            <div className="mt-10 flex items-center justify-between text-2xs font-mono uppercase tracking-[0.14em] text-ink4">
+              <span>drinks.akil.codes</span>
+              <span className="tabular">MMXXVI</span>
+            </div>
           </div>
-          <div className="bg-white/50 backdrop-blur-sm rounded-lg p-3 border border-gray-100">
-            <div className="text-2xl mb-1">📈</div>
-            <div className="text-xs font-medium text-gray-700">Analyze</div>
-          </div>
-          <div className="bg-white/50 backdrop-blur-sm rounded-lg p-3 border border-gray-100">
-            <div className="text-2xl mb-1">🎯</div>
-            <div className="text-xs font-medium text-gray-700">Improve</div>
-          </div>
-        </div>
+        </section>
+      </div>
+
+      <div className="w-full h-px bg-rule" />
+      <div className="w-full flex items-center justify-between px-6 sm:px-10 py-5 text-2xs font-mono uppercase tracking-[0.14em] text-ink4">
+        <span>By Akil</span>
+        <span className="hidden sm:inline">Made in Chennai</span>
+        <span className="tabular">Page 001</span>
       </div>
     </div>
   );
 }
 
+function LedgerRow({
+  time, drink, amount, abv, pure, muted, delay,
+}: {
+  time: string; drink: string; amount: string; abv: string; pure: string; muted?: boolean; delay?: string;
+}) {
+  return (
+    <div
+      className={
+        'grid grid-cols-[48px_1fr_auto_auto_72px] items-baseline gap-3 border-t border-rule py-2.5 first:border-t-0 ink-in ' +
+        (muted ? 'opacity-55' : '')
+      }
+      style={{ animationDelay: delay }}
+    >
+      <span className="text-2xs font-mono text-ink3 tabular">{time}</span>
+      <span className={muted ? 'text-sm text-ink italic' : 'text-sm text-ink'}>{drink}</span>
+      <span className="text-2xs font-mono text-ink2 tabular">{amount}</span>
+      <span className="text-2xs font-mono text-ink3 tabular">{abv}</span>
+      <span className="text-2xs font-mono text-ink tabular text-right">{pure}</span>
+    </div>
+  );
+}
+
+function FootnoteRow({ label, hint }: { label: string; hint: string }) {
+  return (
+    <div className="flex items-baseline justify-between">
+      <span className="text-ink">{label}</span>
+      <span className="text-ink3">{hint}</span>
+    </div>
+  );
+}

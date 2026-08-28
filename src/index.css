@@ -2,262 +2,127 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design tokens ------------------------------------------------------- */
+:root {
+  --font-sans:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+    'Segoe UI', system-ui, sans-serif;
+  --font-mono:
+    ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --paper:   #f8f7f4;
+  --paper-2: #ffffff;
+  --paper-3: #efeee9;
+  --paper-4: #e5e3dc;
+  --ink:     #14110b;
+  --ink-2:   #4d4a44;
+  --ink-3:   #86827a;
+  --ink-4:   #b5b1a8;
+  --rule:    rgba(20, 16, 8, 0.09);
+  --rule-2:  rgba(20, 16, 8, 0.18);
+  --accent:  #14110b;
+  --success: #3f7a3f;
+  --warn:    #8e5d17;
+  --danger:  #9c2e2e;
+
+  color-scheme: light;
+}
+
+:root.dark {
+  --paper:   #0d0c0a;
+  --paper-2: #131210;
+  --paper-3: #1b1a17;
+  --paper-4: #23221e;
+  --ink:     #f0eddf;
+  --ink-2:   #a4a196;
+  --ink-3:   #6f6c62;
+  --ink-4:   #3f3d38;
+  --rule:    rgba(240, 235, 220, 0.09);
+  --rule-2:  rgba(240, 235, 220, 0.20);
+  --accent:  #fafaf5;
+  --success: #7fb884;
+  --warn:    #dcb073;
+  --danger:  #e08a8a;
+
+  color-scheme: dark;
+}
+
+/* Base --------------------------------------------------------------- */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--paper);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'ss01', 'cv11', 'kern';
+  text-rendering: optimizeLegibility;
+}
+#root { min-height: 100vh; }
+
+::selection { background: var(--ink); color: var(--paper); }
+
+/* Numbers should be tabular by default in this app (drinks, ml, %) */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Scrollbar restrained */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: var(--rule-2); border-radius: 999px; border: 3px solid var(--paper); }
+*::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
+
+/* Focus ring — same on every focusable element */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
-#root {
-  min-height: 100vh;
+/* One gentle fade utility for section mounts. Nothing else. */
+@keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise 220ms ease-out both; }
+
+/* Login-specific: a stagger + a stroke-in for the ledger. Restrained. */
+@keyframes ink-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.ink-in { animation: ink-in 480ms cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+
+@keyframes glass-fill { from { stroke-dashoffset: 60; opacity: 0; } to { stroke-dashoffset: 0; opacity: 0.55; } }
+.glass-fill { stroke-dasharray: 60; animation: glass-fill 1400ms cubic-bezier(0.4, 0.1, 0.2, 1) 300ms both; }
+
+@keyframes draw-stroke { from { stroke-dashoffset: var(--len, 400); } to { stroke-dashoffset: 0; } }
+.draw-stroke { animation: draw-stroke 900ms cubic-bezier(0.4, 0.1, 0.2, 1) both; }
+
+/* Login paper texture — very subtle, SVG noise inlined as background */
+.login-paper {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.078 0 0 0 0 0.067 0 0 0 0 0.043 0 0 0 0.045 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+:root.dark .login-paper {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.95 0 0 0 0 0.92 0 0 0 0 0.86 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* Modern Animation Keyframes */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Recharts overrides — restrained legibility */
+.recharts-cartesian-axis-tick-value { fill: var(--ink-3) !important; font-size: 11px; font-family: var(--font-mono); }
+.recharts-cartesian-axis-line, .recharts-cartesian-axis-tick-line { stroke: var(--rule) !important; }
+.recharts-cartesian-grid-horizontal line, .recharts-cartesian-grid-vertical line { stroke: var(--rule) !important; }
+.recharts-tooltip-wrapper { outline: none; }
+.recharts-default-tooltip {
+  background: var(--paper-2) !important;
+  border: 1px solid var(--rule-2) !important;
+  border-radius: 6px !important;
+  padding: 8px 10px !important;
+  font-family: var(--font-mono) !important;
+  font-size: 11.5px !important;
+  color: var(--ink) !important;
+  box-shadow: 0 8px 24px -12px rgba(0,0,0,0.15) !important;
 }
-
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideIn {
-  from {
-    width: 0;
-  }
-}
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes bounceIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.3);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
-  70% {
-    transform: scale(0.9);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-@keyframes countUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes progressFill {
-  from {
-    width: 0;
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-/* Animation Utility Classes */
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out forwards;
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 0.6s ease-out forwards;
-}
-
-.animate-fade-in-down {
-  animation: fadeInDown 0.5s ease-out forwards;
-}
-
-.animate-slide-in-right {
-  animation: slideInRight 0.5s ease-out forwards;
-}
-
-.animate-slide-in-left {
-  animation: slideInLeft 0.5s ease-out forwards;
-}
-
-.animate-scale-in {
-  animation: scaleIn 0.4s ease-out forwards;
-}
-
-.animate-bounce-in {
-  animation: bounceIn 0.6s ease-out forwards;
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-/* Stagger animations */
-.animate-stagger-1 {
-  animation: fadeInUp 0.5s ease-out 0.1s forwards;
-  opacity: 0;
-}
-
-.animate-stagger-2 {
-  animation: fadeInUp 0.5s ease-out 0.2s forwards;
-  opacity: 0;
-}
-
-.animate-stagger-3 {
-  animation: fadeInUp 0.5s ease-out 0.3s forwards;
-  opacity: 0;
-}
-
-.animate-stagger-4 {
-  animation: fadeInUp 0.5s ease-out 0.4s forwards;
-  opacity: 0;
-}
-
-.chart-container {
-  animation: fadeIn 0.6s ease-out;
-}
-
-/* Smooth transitions for interactive elements */
-.card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
-
-.button-bounce:active {
-  transform: scale(0.95);
-  transition: transform 0.1s;
-}
-
-/* Gradient animation for backgrounds */
-.gradient-animated {
-  background-size: 200% 200%;
-  animation: gradient 3s ease infinite;
-}
-
-/* Loading shimmer effect */
-.shimmer {
-  background: linear-gradient(
-    90deg,
-    #f0f0f0 25%,
-    #e0e0e0 50%,
-    #f0f0f0 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
+.recharts-tooltip-label { color: var(--ink-3) !important; font-size: 10.5px !important; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; }

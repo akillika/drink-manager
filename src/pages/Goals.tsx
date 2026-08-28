@@ -2,16 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Goal } from '../types';
 import { db } from '../config/firebase';
-import {
-  collection,
-  query,
-  getDocs,
-  addDoc,
-  updateDoc,
-  doc,
-  Timestamp,
-  where,
-} from 'firebase/firestore';
+import { collection, query, getDocs, addDoc, updateDoc, doc, Timestamp, where } from 'firebase/firestore';
+import { Page, PageHeader, Section, Card, Button, Field, Input, Badge } from '../components/ui';
 
 export default function Goals() {
   const { user } = useAuth();
@@ -22,40 +14,31 @@ export default function Goals() {
   const [monthlyLimit, setMonthlyLimit] = useState(40);
   const [weeklyActive, setWeeklyActive] = useState(false);
   const [monthlyActive, setMonthlyActive] = useState(false);
+  const [savingWeekly, setSavingWeekly] = useState(false);
+  const [savingMonthly, setSavingMonthly] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      loadGoals();
-    }
+    if (user) loadGoals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const loadGoals = async () => {
     if (!user) return;
     try {
       setLoading(true);
-      const goalsQuery = query(
-        collection(db, 'goals'),
-        where('userId', '==', user.uid)
-      );
+      const goalsQuery = query(collection(db, 'goals'), where('userId', '==', user.uid));
       const snapshot = await getDocs(goalsQuery);
-
       snapshot.forEach((docSnapshot) => {
         const data = docSnapshot.data();
         const goal: Goal = {
-          id: docSnapshot.id,
-          ...data,
+          id: docSnapshot.id, ...data,
           createdAt: data.createdAt.toDate(),
           updatedAt: data.updatedAt.toDate(),
         } as Goal;
-
         if (goal.type === 'weekly') {
-          setWeeklyGoal(goal);
-          setWeeklyLimit(goal.limit);
-          setWeeklyActive(goal.isActive);
+          setWeeklyGoal(goal); setWeeklyLimit(goal.limit); setWeeklyActive(goal.isActive);
         } else if (goal.type === 'monthly') {
-          setMonthlyGoal(goal);
-          setMonthlyLimit(goal.limit);
-          setMonthlyActive(goal.isActive);
+          setMonthlyGoal(goal); setMonthlyLimit(goal.limit); setMonthlyActive(goal.isActive);
         }
       });
     } catch (error) {
@@ -66,214 +49,137 @@ export default function Goals() {
   };
 
   const saveGoal = async (type: 'weekly' | 'monthly', limit: number, isActive: boolean) => {
-    if (!user) {
-      alert('You must be signed in to save a goal.');
-      return;
-    }
+    if (!user) return alert('You must be signed in to save a goal.');
+    const setSaving = type === 'weekly' ? setSavingWeekly : setSavingMonthly;
     try {
-      const goalData = {
-        userId: user.uid,
-        type,
-        limit,
-        isActive,
-        updatedAt: Timestamp.fromDate(new Date()),
-      };
-
-      if (type === 'weekly') {
-        if (weeklyGoal?.id) {
-          await updateDoc(doc(db, 'goals', weeklyGoal.id), {
-            ...goalData,
-            createdAt: Timestamp.fromDate(weeklyGoal.createdAt),
-          });
-          setWeeklyGoal({ ...weeklyGoal, ...goalData, createdAt: weeklyGoal.createdAt, updatedAt: new Date() });
-        } else {
-          const newGoal = await addDoc(collection(db, 'goals'), {
-            ...goalData,
-            createdAt: Timestamp.fromDate(new Date()),
-          });
-          setWeeklyGoal({
-            id: newGoal.id,
-            userId: user.uid,
-            type: 'weekly',
-            limit,
-            isActive,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
-        }
+      setSaving(true);
+      const goalData = { userId: user.uid, type, limit, isActive, updatedAt: Timestamp.fromDate(new Date()) };
+      const existing = type === 'weekly' ? weeklyGoal : monthlyGoal;
+      if (existing?.id) {
+        await updateDoc(doc(db, 'goals', existing.id), { ...goalData, createdAt: Timestamp.fromDate(existing.createdAt) });
+        const updated = { ...existing, ...goalData, createdAt: existing.createdAt, updatedAt: new Date() };
+        if (type === 'weekly') setWeeklyGoal(updated); else setMonthlyGoal(updated);
       } else {
-        if (monthlyGoal?.id) {
-          await updateDoc(doc(db, 'goals', monthlyGoal.id), {
-            ...goalData,
-            createdAt: Timestamp.fromDate(monthlyGoal.createdAt),
-          });
-          setMonthlyGoal({ ...monthlyGoal, ...goalData, createdAt: monthlyGoal.createdAt, updatedAt: new Date() });
-        } else {
-          const newGoal = await addDoc(collection(db, 'goals'), {
-            ...goalData,
-            createdAt: Timestamp.fromDate(new Date()),
-          });
-          setMonthlyGoal({
-            id: newGoal.id,
-            userId: user.uid,
-            type: 'monthly',
-            limit,
-            isActive,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
-        }
+        const newGoal = await addDoc(collection(db, 'goals'), { ...goalData, createdAt: Timestamp.fromDate(new Date()) });
+        const created: Goal = { id: newGoal.id, userId: user.uid, type, limit, isActive, createdAt: new Date(), updatedAt: new Date() };
+        if (type === 'weekly') setWeeklyGoal(created); else setMonthlyGoal(created);
       }
     } catch (error: any) {
       console.error('Error saving goal:', error);
       alert(`Failed to save ${type} goal: ${error?.message || 'Unknown error'}`);
+    } finally {
+      setSaving(false);
     }
-  };
-
-  const handleWeeklySave = () => {
-    saveGoal('weekly', weeklyLimit, weeklyActive);
-  };
-
-  const handleMonthlySave = () => {
-    saveGoal('monthly', monthlyLimit, monthlyActive);
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-gray-500">Loading...</div>
-      </div>
+      <Page>
+        <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
+      </Page>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="animate-fade-in-down">
-        <h2 className="text-3xl font-bold text-gray-900">🎯 Goals & Limits</h2>
-        <p className="text-sm text-gray-500 mt-1">Set weekly or monthly limits to track your consumption</p>
+    <Page>
+      <PageHeader
+        eyebrow="Limits"
+        title="Goals"
+        description="Set a soft ceiling for how much you plan to drink each week or month. Purely for your own reference."
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+        <GoalEditor
+          title="Weekly limit"
+          hint="Standard drinks per week"
+          limit={weeklyLimit}
+          setLimit={setWeeklyLimit}
+          active={weeklyActive}
+          setActive={setWeeklyActive}
+          onSave={() => saveGoal('weekly', weeklyLimit, weeklyActive)}
+          saving={savingWeekly}
+          goal={weeklyGoal}
+        />
+        <GoalEditor
+          title="Monthly limit"
+          hint="Standard drinks per month"
+          limit={monthlyLimit}
+          setLimit={setMonthlyLimit}
+          active={monthlyActive}
+          setActive={setMonthlyActive}
+          onSave={() => saveGoal('monthly', monthlyLimit, monthlyActive)}
+          saving={savingMonthly}
+          goal={monthlyGoal}
+        />
       </div>
 
-      {/* Weekly Goal */}
-      <div className="bg-white rounded-xl shadow-lg p-6 border border-indigo-100 card-hover animate-fade-in-up">
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xl font-semibold text-gray-900">Weekly Goal</h3>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={weeklyActive}
-                onChange={(e) => setWeeklyActive(e.target.checked)}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <span className="text-sm text-gray-600">Active</span>
-            </label>
+      <Section title="About standard drinks">
+        <Card>
+          <p className="text-sm text-ink2 mb-3">
+            One standard drink is <strong className="text-ink">12.68 ml of pure alcohol</strong>, about 10 grams. This makes weekly and monthly totals comparable across beer, wine and spirits.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+            <ExampleRow amount="650 ml" abv="5% ABV" drinks="≈ 2.6 drinks" label="A pint of beer" />
+            <ExampleRow amount="150 ml" abv="12% ABV" drinks="≈ 1.4 drinks" label="A glass of wine" />
+            <ExampleRow amount="30 ml" abv="40% ABV" drinks="≈ 0.9 drinks" label="A shot of whisky" />
           </div>
-          <p className="text-sm text-gray-500">Set a maximum number of standard drinks per week</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Weekly Limit (Standard Drinks)
-            </label>
-            <input
-              type="number"
-              value={weeklyLimit}
-              onChange={(e) => setWeeklyLimit(Math.max(0, parseInt(e.target.value) || 0))}
-              min="0"
-              step="1"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg transition-all duration-200 focus:scale-[1.02]"
-              placeholder="e.g., 10"
-            />
-          </div>
-          <button
-            onClick={handleWeeklySave}
-            className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 font-medium shadow-md button-bounce transition-all duration-200 hover:scale-105 active:scale-95"
-          >
-            Save Weekly Goal
-          </button>
-        </div>
-
-        {weeklyGoal && (
-          <div className="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-            <p className="text-sm text-indigo-700">
-              ✓ Weekly goal {weeklyGoal.isActive ? 'active' : 'inactive'}: Max {weeklyGoal.limit} standard drinks
-              {weeklyGoal.updatedAt && (
-                <span className="ml-2 text-indigo-500">
-                  (Updated: {weeklyGoal.updatedAt.toLocaleDateString()})
-                </span>
-              )}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Monthly Goal */}
-      <div className="bg-white rounded-xl shadow-lg p-6 border border-purple-100 card-hover animate-fade-in-up animate-stagger-2">
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xl font-semibold text-gray-900">Monthly Goal</h3>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={monthlyActive}
-                onChange={(e) => setMonthlyActive(e.target.checked)}
-                className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-              />
-              <span className="text-sm text-gray-600">Active</span>
-            </label>
-          </div>
-          <p className="text-sm text-gray-500">Set a maximum number of standard drinks per month</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Monthly Limit (Standard Drinks)
-            </label>
-            <input
-              type="number"
-              value={monthlyLimit}
-              onChange={(e) => setMonthlyLimit(Math.max(0, parseInt(e.target.value) || 0))}
-              min="0"
-              step="1"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-lg"
-              placeholder="e.g., 40"
-            />
-          </div>
-          <button
-            onClick={handleMonthlySave}
-            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 font-medium shadow-md"
-          >
-            Save Monthly Goal
-          </button>
-        </div>
-
-        {monthlyGoal && (
-          <div className="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
-            <p className="text-sm text-purple-700">
-              ✓ Monthly goal {monthlyGoal.isActive ? 'active' : 'inactive'}: Max {monthlyGoal.limit} standard drinks
-              {monthlyGoal.updatedAt && (
-                <span className="ml-2 text-purple-500">
-                  (Updated: {monthlyGoal.updatedAt.toLocaleDateString()})
-                </span>
-              )}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Info Section */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
-        <h4 className="font-semibold text-gray-900 mb-2">💡 About Standard Drinks</h4>
-        <p className="text-sm text-gray-700 mb-3">
-          One standard drink equals <strong>12.68ml of pure alcohol</strong> (equivalent to 10g). This helps you track consumption consistently regardless of drink type.
-        </p>
-        <p className="text-xs text-gray-600">
-          Examples: 650ml beer (5% ABV) ≈ 2.6 drinks • 30ml whisky (40% ABV) ≈ 0.9 drinks • 150ml wine (12% ABV) ≈ 1.4 drinks
-        </p>
-      </div>
-    </div>
+        </Card>
+      </Section>
+    </Page>
   );
 }
 
+function GoalEditor({
+  title, hint, limit, setLimit, active, setActive, onSave, saving, goal,
+}: {
+  title: string; hint: string;
+  limit: number; setLimit: (n: number) => void;
+  active: boolean; setActive: (v: boolean) => void;
+  onSave: () => void; saving: boolean; goal: Goal | null;
+}) {
+  return (
+    <Card>
+      <div className="flex items-baseline justify-between mb-4">
+        <div>
+          <h2 className="text-md font-medium text-ink">{title}</h2>
+          <p className="text-xs text-ink3 mt-0.5">{hint}</p>
+        </div>
+        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={active}
+            onChange={(e) => setActive(e.target.checked)}
+            className="rounded border-rule2 text-ink focus:ring-0 focus:ring-offset-0"
+          />
+          <span className="text-xs text-ink2">Active</span>
+        </label>
+      </div>
+
+      <Field label="Limit (standard drinks)">
+        <Input type="number" min={0} step={1} value={limit} onChange={(e) => setLimit(Math.max(0, parseInt(e.target.value) || 0))} />
+      </Field>
+
+      <div className="flex items-center gap-3 mt-4">
+        <Button variant="primary" onClick={onSave} disabled={saving}>
+          {saving ? 'Saving…' : 'Save'}
+        </Button>
+        {goal && (
+          <div className="text-xs text-ink3 flex items-center gap-2">
+            <Badge tone={goal.isActive ? 'success' : 'neutral'}>{goal.isActive ? 'Active' : 'Paused'}</Badge>
+            <span className="font-mono tabular">Updated {goal.updatedAt.toLocaleDateString()}</span>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function ExampleRow({ amount, abv, drinks, label }: { amount: string; abv: string; drinks: string; label: string }) {
+  return (
+    <div className="border border-rule rounded-md p-3">
+      <div className="text-xs text-ink3 mb-1">{label}</div>
+      <div className="text-sm font-mono tabular text-ink">{amount} · {abv}</div>
+      <div className="text-xs text-ink3 mt-1">{drinks}</div>
+    </div>
+  );
+}

@@ -1,223 +1,156 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { IconChart, IconPlus, IconList, IconClock, IconBook, IconTarget, IconLogout, IconMenu, IconClose, IconMoon, IconSun, cx } from './ui';
 
 interface LayoutProps {
   children: ReactNode;
 }
 
+const NAV = [
+  { to: '/',        label: 'Dashboard', Icon: IconChart },
+  { to: '/add',     label: 'Log entry',  Icon: IconPlus },
+  { to: '/history', label: 'History',    Icon: IconList },
+  { to: '/sessions',label: 'Sessions',   Icon: IconClock },
+  { to: '/library', label: 'Library',    Icon: IconBook },
+  { to: '/goals',   label: 'Goals',      Icon: IconTarget },
+] as const;
+
+const LS_THEME = 'dm.theme';
+
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const { user, signOut } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'light';
+    const s = localStorage.getItem(LS_THEME);
+    if (s === 'light' || s === 'dark') return s;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
 
-  const isActive = (path: string) => {
-    return location.pathname === path;
-  };
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem(LS_THEME, theme);
+  }, [theme]);
+
+  const isActive = (path: string) => path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-2xl font-bold text-indigo-600">🍺 Alcohol Tracker</h1>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+    <div className="min-h-screen bg-paper">
+      <nav className="border-b border-rule bg-paper sticky top-0 z-20">
+        <div className="max-w-page mx-auto flex items-center gap-2 px-5 sm:px-8 h-14">
+          {/* Brand */}
+          <Link to="/" className="flex items-center gap-2.5 pr-4 mr-2 border-r border-rule h-6" aria-label="Drink Manager, home">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-ink text-paper text-xs font-semibold">DM</span>
+            <span className="text-sm font-medium text-ink hidden sm:inline">Drink Manager</span>
+          </Link>
+
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-0.5">
+            {NAV.map(({ to, label, Icon }) => {
+              const active = isActive(to);
+              return (
                 <Link
-                  to="/"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all duration-200 ${
-                    isActive('/')
-                      ? 'border-indigo-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 hover:scale-105'
-                  }`}
+                  key={to}
+                  to={to}
+                  className={cx(
+                    'inline-flex items-center gap-2 h-8 px-3 rounded-md text-sm transition-colors',
+                    active ? 'bg-paper3 text-ink' : 'text-ink2 hover:text-ink hover:bg-paper3',
+                  )}
                 >
-                  Dashboard
+                  <Icon width={14} height={14} />
+                  <span>{label}</span>
                 </Link>
-                <Link
-                  to="/add"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all duration-200 hover:scale-105 ${
-                    isActive('/add')
-                      ? 'border-indigo-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-                >
-                  Add Entry
-                </Link>
-                <Link
-                  to="/history"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all duration-200 hover:scale-105 ${
-                    isActive('/history')
-                      ? 'border-indigo-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-                >
-                  History
-                </Link>
-                <Link
-                  to="/sessions"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all duration-200 hover:scale-105 ${
-                    isActive('/sessions')
-                      ? 'border-indigo-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-                >
-                  Sessions
-                </Link>
-                <Link
-                  to="/library"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all duration-200 hover:scale-105 ${
-                    isActive('/library')
-                      ? 'border-indigo-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-                >
-                  Drink Library
-                </Link>
-                <Link
-                  to="/goals"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all duration-200 hover:scale-105 ${
-                    isActive('/goals')
-                      ? 'border-indigo-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-                >
-                  Goals
-                </Link>
-              </div>
-            </div>
-            <div className="flex items-center">
-              {user && (
-                <>
-                  <div className="hidden sm:flex items-center gap-4">
-                    <div className="flex flex-col items-end">
-                      <span className="text-sm font-medium text-gray-700">{user.displayName || user.email}</span>
-                      <span className="text-xs text-gray-500">{user.email}</span>
-                    </div>
-                    <button
-                      onClick={() => signOut()}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 button-bounce hover:scale-105 active:scale-95"
-                    >
-                      Sign Out
-                    </button>
+              );
+            })}
+          </div>
+
+          <div className="ml-auto flex items-center gap-1.5">
+            {/* Theme */}
+            <button
+              onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-md text-ink2 hover:text-ink hover:bg-paper3 transition-colors"
+              aria-label="Toggle theme"
+              title="Toggle theme"
+            >
+              {theme === 'dark' ? <IconSun /> : <IconMoon />}
+            </button>
+
+            {user && (
+              <>
+                <div className="hidden sm:flex items-center gap-3 pl-2 ml-1 border-l border-rule h-6">
+                  <div className="hidden lg:flex flex-col items-end leading-tight">
+                    <span className="text-xs text-ink font-medium">{user.displayName || user.email}</span>
+                    <span className="text-2xs text-ink3">{user.email}</span>
                   </div>
-                  {/* Mobile menu button */}
                   <button
-                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    className="sm:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    aria-label="Toggle menu"
+                    onClick={() => signOut()}
+                    className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs text-ink2 hover:text-ink hover:bg-paper3 transition-colors"
+                    title="Sign out"
                   >
-                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      {mobileMenuOpen ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                      )}
-                    </svg>
+                    <IconLogout />
+                    <span className="hidden sm:inline">Sign out</span>
                   </button>
-                </>
-              )}
-            </div>
+                </div>
+
+                {/* Mobile menu button */}
+                <button
+                  onClick={() => setMenuOpen((v) => !v)}
+                  className="md:hidden inline-flex items-center justify-center w-8 h-8 rounded-md text-ink2 hover:text-ink hover:bg-paper3 transition-colors"
+                  aria-label="Toggle navigation"
+                >
+                  {menuOpen ? <IconClose /> : <IconMenu />}
+                </button>
+              </>
+            )}
           </div>
         </div>
 
         {/* Mobile menu */}
-        {mobileMenuOpen && (
-          <div className="sm:hidden border-t border-gray-200 animate-fade-in-down">
-            <div className="px-2 pt-2 pb-3 space-y-1 bg-white">
-              <Link
-                to="/"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-all duration-200 ${
-                  isActive('/')
-                    ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-500'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/add"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-all duration-200 ${
-                  isActive('/add')
-                    ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-500'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                Add Entry
-              </Link>
-              <Link
-                to="/history"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-all duration-200 ${
-                  isActive('/history')
-                    ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-500'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                History
-              </Link>
-              <Link
-                to="/sessions"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-all duration-200 ${
-                  isActive('/sessions')
-                    ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-500'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                Sessions
-              </Link>
-              <Link
-                to="/library"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-all duration-200 ${
-                  isActive('/library')
-                    ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-500'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                Drink Library
-              </Link>
-              <Link
-                to="/goals"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-all duration-200 ${
-                  isActive('/goals')
-                    ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-500'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                Goals
-              </Link>
-              <div className="border-t border-gray-200 pt-2 mt-2">
-                <div className="px-3 py-2">
-                  <div className="text-sm font-medium text-gray-700">{user?.displayName || user?.email}</div>
-                  <div className="text-xs text-gray-500 truncate">{user?.email}</div>
+        {menuOpen && (
+          <div className="md:hidden border-t border-rule bg-paper2">
+            <div className="max-w-page mx-auto px-5 py-3 grid gap-1">
+              {NAV.map(({ to, label, Icon }) => {
+                const active = isActive(to);
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    onClick={() => setMenuOpen(false)}
+                    className={cx(
+                      'inline-flex items-center gap-3 h-10 px-3 rounded-md text-sm transition-colors',
+                      active ? 'bg-paper3 text-ink' : 'text-ink2 hover:text-ink hover:bg-paper3',
+                    )}
+                  >
+                    <Icon width={16} height={16} />
+                    <span>{label}</span>
+                  </Link>
+                );
+              })}
+              {user && (
+                <div className="border-t border-rule pt-3 mt-2">
+                  <div className="px-3 pb-2">
+                    <div className="text-sm text-ink font-medium">{user.displayName || user.email}</div>
+                    <div className="text-xs text-ink3 truncate">{user.email}</div>
+                  </div>
+                  <button
+                    onClick={() => { setMenuOpen(false); signOut(); }}
+                    className="w-full inline-flex items-center gap-3 h-10 px-3 rounded-md text-sm text-ink2 hover:text-ink hover:bg-paper3 transition-colors"
+                  >
+                    <IconLogout />
+                    <span>Sign out</span>
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    signOut();
-                  }}
-                  className="w-full mt-2 px-3 py-2 text-left text-base font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 button-bounce"
-                >
-                  Sign Out
-                </button>
-              </div>
+              )}
             </div>
           </div>
         )}
       </nav>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {children}
-        </div>
+      <main>
+        {children}
       </main>
     </div>
   );
 }
-
