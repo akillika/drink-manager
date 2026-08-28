@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Goal } from '../types';
 import { db } from '../config/firebase';
 import { collection, query, getDocs, addDoc, updateDoc, doc, Timestamp, where } from 'firebase/firestore';
-import { Page, PageHeader, Section, Card, Button, Field, Input, Badge } from '../components/ui';
+import { Page, PageHeader, PageBody, Section, Card, Button, Field, Input, Badge } from '../components/ui';
 
 export default function Goals() {
   const { user } = useAuth();
@@ -75,7 +75,10 @@ export default function Goals() {
   if (loading) {
     return (
       <Page>
-        <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
+        <PageHeader eyebrow="Limits" title="Goals" />
+        <PageBody>
+          <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
+        </PageBody>
       </Page>
     );
   }
@@ -88,6 +91,7 @@ export default function Goals() {
         description="Set a soft ceiling for how much you plan to drink each week or month. Purely for your own reference."
       />
 
+      <PageBody>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
         <GoalEditor
           title="Weekly limit"
@@ -125,6 +129,7 @@ export default function Goals() {
           </div>
         </Card>
       </Section>
+      </PageBody>
     </Page>
   );
 }

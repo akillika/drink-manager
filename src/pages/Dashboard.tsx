@@ -6,12 +6,12 @@ import { AlcoholEntry, DailyStats, Goal } from '../types';
 import { db } from '../config/firebase';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
-import { Page, PageHeader, Section, Card, Stat, Progress, Empty, Button, Badge, IconArrowRight, IconPlus, IconTarget, cx } from '../components/ui';
+import {
+  Page, PageHeader, PageBody, Card, StatCard, Ring, Button, Badge,
+  Empty, IconArrowRight, IconPlus, IconTarget, IconGlass, cx,
+} from '../components/ui';
 
-// Standard drink = 12.68 ml pure alcohol (10 g / 0.789 g/ml).
 const STANDARD_DRINK_ALCOHOL_ML = 12.68;
-
-// Restrained series palette used across all charts. Muted hues, not candy.
 const SERIES = ['#3f7a3f', '#305a9a', '#8e5d17', '#9c2e2e', '#6a3f8c', '#a45078', '#4d4a44'];
 
 function CustomTooltip({ active, payload, label }: any) {
@@ -39,48 +39,30 @@ export default function Dashboard() {
   const [monthlyConsumption, setMonthlyConsumption] = useState(0);
 
   useEffect(() => {
-    if (user) {
-      loadStats();
-      loadGoals();
-    }
+    if (user) { loadStats(); loadGoals(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  useEffect(() => {
-    calculateGoalProgress();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allEntries, weeklyGoal, monthlyGoal]);
+  useEffect(() => { calculateGoalProgress(); /* eslint-disable-line */ }, [allEntries, weeklyGoal, monthlyGoal]);
 
   const loadStats = async () => {
     if (!user) return;
     try {
       setLoading(true);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const todayQuery = query(
-        collection(db, 'entries'),
-        where('userId', '==', user.uid),
-        where('date', '>=', Timestamp.fromDate(today))
-      );
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const todayQuery = query(collection(db, 'entries'), where('userId', '==', user.uid), where('date', '>=', Timestamp.fromDate(today)));
       const todaySnapshot = await getDocs(todayQuery);
       const todayEntries: AlcoholEntry[] = [];
       todaySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
         todayEntries.push({ id: docSnap.id, ...data, date: data.date.toDate() } as AlcoholEntry);
       });
-
       const todayTotal = todayEntries.reduce((sum, e) => sum + e.amount, 0);
       const todayAlcohol = todayEntries.reduce((sum, e) => sum + (e.amount * e.alcoholPercentage / 100), 0);
       setTodayStats({ date: format(today, 'yyyy-MM-dd'), totalMl: todayTotal, totalAlcohol: todayAlcohol, entries: todayEntries });
 
-      const weekAgo = new Date(today);
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      const weekQuery = query(
-        collection(db, 'entries'),
-        where('userId', '==', user.uid),
-        where('date', '>=', Timestamp.fromDate(weekAgo))
-      );
+      const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7);
+      const weekQuery = query(collection(db, 'entries'), where('userId', '==', user.uid), where('date', '>=', Timestamp.fromDate(weekAgo)));
       const weekSnapshot = await getDocs(weekQuery);
       const weekMap = new Map<string, AlcoholEntry[]>();
       weekSnapshot.forEach((docSnap) => {
@@ -114,10 +96,7 @@ export default function Dashboard() {
     }
   };
 
-  const calculateStandardDrinks = (entry: AlcoholEntry): number => {
-    const alcoholMl = (entry.amount * entry.alcoholPercentage / 100);
-    return alcoholMl / STANDARD_DRINK_ALCOHOL_ML;
-  };
+  const calculateStandardDrinks = (entry: AlcoholEntry): number => (entry.amount * entry.alcoholPercentage / 100) / STANDARD_DRINK_ALCOHOL_ML;
 
   const loadGoals = async () => {
     if (!user) return;
@@ -126,12 +105,7 @@ export default function Dashboard() {
       const snapshot = await getDocs(goalsQuery);
       snapshot.forEach((docSnapshot) => {
         const data = docSnapshot.data();
-        const goal: Goal = {
-          id: docSnapshot.id,
-          ...data,
-          createdAt: data.createdAt.toDate(),
-          updatedAt: data.updatedAt.toDate(),
-        } as Goal;
+        const goal: Goal = { id: docSnapshot.id, ...data, createdAt: data.createdAt.toDate(), updatedAt: data.updatedAt.toDate() } as Goal;
         if (goal.type === 'weekly') setWeeklyGoal(goal);
         else if (goal.type === 'monthly') setMonthlyGoal(goal);
       });
@@ -141,16 +115,10 @@ export default function Dashboard() {
   };
 
   const calculateGoalProgress = () => {
-    if (allEntries.length === 0) {
-      setWeeklyConsumption(0);
-      setMonthlyConsumption(0);
-      return;
-    }
+    if (allEntries.length === 0) { setWeeklyConsumption(0); setMonthlyConsumption(0); return; }
     const now = new Date();
-    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-    weekStart.setHours(0, 0, 0, 0);
-    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-    weekEnd.setHours(23, 59, 59, 999);
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 }); weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); weekEnd.setHours(23, 59, 59, 999);
     const weeklyEntries = allEntries.filter(e => {
       const d = new Date(e.date); d.setHours(0, 0, 0, 0);
       return d >= weekStart && d <= weekEnd;
@@ -169,8 +137,7 @@ export default function Dashboard() {
   const getTrendData = () => {
     if (allEntries.length === 0) return [];
     const now = new Date();
-    let startDate: Date;
-    let groupBy: (date: Date) => string;
+    let startDate: Date; let groupBy: (date: Date) => string;
     if (chartPeriod === 'week') {
       startDate = new Date(now); startDate.setDate(startDate.getDate() - 30);
       groupBy = (d: Date) => format(d, 'dd/MM');
@@ -221,10 +188,16 @@ export default function Dashboard() {
     return 'safe';
   };
 
+  const toneOf = (s: 'safe' | 'warn' | 'danger'): 'success' | 'warn' | 'danger' =>
+    s === 'danger' ? 'danger' : s === 'warn' ? 'warn' : 'success';
+
   if (loading) {
     return (
       <Page>
-        <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
+        <PageHeader eyebrow="Overview" title="Dashboard" />
+        <PageBody>
+          <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
+        </PageBody>
       </Page>
     );
   }
@@ -233,13 +206,17 @@ export default function Dashboard() {
   const typeData = getDrinkTypeData();
   const dowData = getDayOfWeekData();
   const totalEntries = allEntries.length;
+  const now = new Date();
+  const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 18 ? 'Good afternoon' : 'Good evening';
+
+  const weeklyStatus = weeklyGoal?.isActive ? getGoalStatus(weeklyConsumption, weeklyGoal.limit) : null;
+  const monthlyStatus = monthlyGoal?.isActive ? getGoalStatus(monthlyConsumption, monthlyGoal.limit) : null;
 
   return (
     <Page>
       <PageHeader
-        eyebrow="Overview"
-        title="Dashboard"
-        description="A quiet look at what you've been drinking. Numbers, patterns, and the limits you set for yourself."
+        eyebrow={format(now, 'EEEE, dd MMM')}
+        title={greeting}
         actions={
           <Link to="/add">
             <Button variant="primary"><IconPlus /> Log entry</Button>
@@ -247,112 +224,117 @@ export default function Dashboard() {
         }
       />
 
-      {/* Top summary */}
-      <Section>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-rule border border-rule rounded-lg overflow-hidden">
-          <div className="bg-paper2 p-5">
-            <Stat
-              label="Today"
-              value={todayStats ? todayStats.totalMl.toFixed(0) : '0'}
-              unit="ml"
-              hint={todayStats ? `${todayStats.entries.length} ${todayStats.entries.length === 1 ? 'drink' : 'drinks'} · ${todayStats.totalAlcohol.toFixed(1)} ml pure` : 'No entries yet'}
-            />
-          </div>
-          <div className="bg-paper2 p-5">
-            <Stat
-              label="This week"
-              value={weeklyConsumption.toFixed(1)}
-              unit="std drinks"
-              hint={weeklyGoal?.isActive ? `Limit ${weeklyGoal.limit}` : 'No goal set'}
-            />
-          </div>
-          <div className="bg-paper2 p-5">
-            <Stat
-              label="This month"
-              value={monthlyConsumption.toFixed(1)}
-              unit="std drinks"
-              hint={monthlyGoal?.isActive ? `Limit ${monthlyGoal.limit}` : 'No goal set'}
-            />
-          </div>
-          <div className="bg-paper2 p-5">
-            <Stat
-              label="Logged all time"
-              value={totalEntries.toString()}
-              unit={totalEntries === 1 ? 'entry' : 'entries'}
-            />
-          </div>
+      <PageBody>
+        {/* Hero stat row */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+          <StatCard
+            label="Today"
+            value={todayStats ? todayStats.totalMl.toFixed(0) : '0'}
+            unit="ml"
+            hint={todayStats && todayStats.entries.length > 0
+              ? `${todayStats.entries.length} ${todayStats.entries.length === 1 ? 'drink' : 'drinks'} · ${todayStats.totalAlcohol.toFixed(1)} ml pure`
+              : 'Nothing logged yet'}
+            accent="blue"
+          />
+          <StatCard
+            label="This week"
+            value={weeklyConsumption.toFixed(1)}
+            unit="std"
+            hint={weeklyGoal?.isActive ? `${Math.round((weeklyConsumption / weeklyGoal.limit) * 100)}% of ${weeklyGoal.limit}` : 'No goal set'}
+            accent={weeklyStatus === 'danger' ? 'red' : weeklyStatus === 'warn' ? 'amber' : 'green'}
+          />
+          <StatCard
+            label="This month"
+            value={monthlyConsumption.toFixed(1)}
+            unit="std"
+            hint={monthlyGoal?.isActive ? `${Math.round((monthlyConsumption / monthlyGoal.limit) * 100)}% of ${monthlyGoal.limit}` : 'No goal set'}
+            accent={monthlyStatus === 'danger' ? 'red' : monthlyStatus === 'warn' ? 'amber' : 'purple'}
+          />
+          <StatCard
+            label="All time"
+            value={totalEntries.toString()}
+            unit={totalEntries === 1 ? 'entry' : 'entries'}
+            hint={allEntries[0] ? `Latest ${format(allEntries[0].date, 'dd MMM HH:mm')}` : 'Not started yet'}
+            accent="amber"
+          />
         </div>
-      </Section>
 
-      {/* Goals */}
-      {(weeklyGoal?.isActive || monthlyGoal?.isActive) ? (
-        <Section
-          title="Goals"
-          actions={<Link to="/goals" className="text-xs text-ink3 hover:text-ink flex items-center gap-1">Edit <IconArrowRight width={12} height={12} /></Link>}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Quick log */}
+        <Card className="mb-8">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <div className="text-sm font-medium text-ink flex items-center gap-2"><IconGlass /> Quick log</div>
+              <div className="text-2xs text-ink3">Pre-fill the form with a common drink</div>
+            </div>
+            <Link to="/library" className="text-2xs text-ink3 hover:text-ink flex items-center gap-1">Library <IconArrowRight width={10} height={10} /></Link>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { type: 'Beer', hint: '650 ml · 5%' },
+              { type: 'Whisky', hint: '30 ml · 40%' },
+              { type: 'Rum', hint: '30 ml · 40%' },
+              { type: 'Vodka', hint: '30 ml · 40%' },
+              { type: 'Cocktail', hint: '150 ml · 15%' },
+              { type: 'Other', hint: '100 ml · 10%' },
+            ].map((t) => (
+              <Link key={t.type} to={`/add?type=${encodeURIComponent(t.type)}`} className="inline-flex flex-col items-start gap-0.5 h-auto px-3 py-2 rounded-md text-xs font-medium border border-rule bg-paper2 hover:bg-paper3 hover:border-rule2 transition-colors">
+                <span className="text-ink">{t.type}</span>
+                <span className="text-2xs text-ink3 font-mono tabular">{t.hint}</span>
+              </Link>
+            ))}
+          </div>
+        </Card>
+
+        {/* Goal rings */}
+        {(weeklyGoal?.isActive || monthlyGoal?.isActive) ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             {weeklyGoal?.isActive && (
-              <GoalCard
-                label="Weekly"
-                consumption={weeklyConsumption}
-                limit={weeklyGoal.limit}
-                status={getGoalStatus(weeklyConsumption, weeklyGoal.limit)}
-              />
+              <GoalRingCard label="Weekly goal" consumption={weeklyConsumption} limit={weeklyGoal.limit} status={weeklyStatus!} toneOf={toneOf} />
             )}
             {monthlyGoal?.isActive && (
-              <GoalCard
-                label="Monthly"
-                consumption={monthlyConsumption}
-                limit={monthlyGoal.limit}
-                status={getGoalStatus(monthlyConsumption, monthlyGoal.limit)}
-              />
+              <GoalRingCard label="Monthly goal" consumption={monthlyConsumption} limit={monthlyGoal.limit} status={monthlyStatus!} toneOf={toneOf} />
             )}
           </div>
-        </Section>
-      ) : (
-        <Section>
-          <Empty
-            title="No goals set"
-            description="Set a weekly or monthly limit to track progress and get a heads-up when you're approaching it."
-            action={<Link to="/goals"><Button variant="primary"><IconTarget /> Set goals</Button></Link>}
-          />
-        </Section>
-      )}
-
-      {/* Trend */}
-      <Section
-        title="Consumption trend"
-        description="Standard drinks over time"
-        actions={
-          <div className="inline-flex border border-rule rounded-md overflow-hidden">
-            <button
-              onClick={() => setChartPeriod('week')}
-              className={cx(
-                'h-8 px-3 text-xs font-medium transition-colors',
-                chartPeriod === 'week' ? 'bg-paper3 text-ink' : 'text-ink3 hover:text-ink hover:bg-paper3',
-              )}
-            >
-              Last 30 days
-            </button>
-            <button
-              onClick={() => setChartPeriod('month')}
-              className={cx(
-                'h-8 px-3 text-xs font-medium transition-colors border-l border-rule',
-                chartPeriod === 'month' ? 'bg-paper3 text-ink' : 'text-ink3 hover:text-ink hover:bg-paper3',
-              )}
-            >
-              Last 6 months
-            </button>
+        ) : (
+          <div className="mb-8">
+            <Empty
+              title="Set a soft limit"
+              description="Give yourself a weekly or monthly target and the dashboard will show you where you are."
+              action={<Link to="/goals"><Button variant="primary"><IconTarget /> Set goals</Button></Link>}
+            />
           </div>
-        }
-      >
-        <Card padded={false} className="p-5">
+        )}
+
+        {/* Trend chart */}
+        <Card className="mb-8">
+          <div className="flex items-baseline justify-between gap-3 mb-4 flex-wrap">
+            <div>
+              <div className="text-sm font-medium text-ink">Consumption trend</div>
+              <div className="text-2xs text-ink3 mt-0.5">Standard drinks over time</div>
+            </div>
+            <div className="inline-flex bg-paper3 rounded-full p-0.5">
+              <button
+                onClick={() => setChartPeriod('week')}
+                className={cx('h-7 px-3 text-xs font-medium rounded-full transition-colors',
+                  chartPeriod === 'week' ? 'bg-paper2 text-ink shadow-sm' : 'text-ink3 hover:text-ink')}
+              >
+                30 days
+              </button>
+              <button
+                onClick={() => setChartPeriod('month')}
+                className={cx('h-7 px-3 text-xs font-medium rounded-full transition-colors',
+                  chartPeriod === 'month' ? 'bg-paper2 text-ink shadow-sm' : 'text-ink3 hover:text-ink')}
+              >
+                6 months
+              </button>
+            </div>
+          </div>
           {trend.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={trend} margin={{ top: 8, right: 12, left: -12, bottom: 24 }}>
                 <defs>
                   <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--ink)" stopOpacity={0.14}/>
+                    <stop offset="0%" stopColor="var(--ink)" stopOpacity={0.16}/>
                     <stop offset="100%" stopColor="var(--ink)" stopOpacity={0.0}/>
                   </linearGradient>
                 </defs>
@@ -360,13 +342,10 @@ export default function Dashboard() {
                 <YAxis tickLine={false} axisLine={false} width={40} />
                 <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--rule-2)', strokeWidth: 1 }} />
                 <Area
-                  type="monotone"
-                  dataKey="drinks"
-                  stroke="var(--ink)"
-                  strokeWidth={1.5}
+                  type="monotone" dataKey="drinks" stroke="var(--ink)" strokeWidth={2}
                   fill="url(#trendFill)"
-                  dot={{ fill: 'var(--ink)', r: 2, stroke: 'var(--paper-2)', strokeWidth: 1.5 }}
-                  activeDot={{ r: 4, fill: 'var(--ink)', stroke: 'var(--paper-2)', strokeWidth: 2 }}
+                  dot={{ fill: 'var(--ink)', r: 2.5, stroke: 'var(--paper-2)', strokeWidth: 2 }}
+                  activeDot={{ r: 5, fill: 'var(--ink)', stroke: 'var(--paper-2)', strokeWidth: 2 }}
                   animationDuration={600}
                 />
               </AreaChart>
@@ -375,23 +354,21 @@ export default function Dashboard() {
             <div className="text-center py-16 text-sm text-ink3">Log a few entries to see a trend.</div>
           )}
         </Card>
-      </Section>
 
-      {/* Distributions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-10">
-        <Section title="By drink type" description="Where your standard drinks come from" className="mb-0">
+        {/* Two-column analysis */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
           <Card>
+            <div className="text-sm font-medium text-ink mb-1">By drink type</div>
+            <div className="text-2xs text-ink3 mb-4">Total standard drinks per category</div>
             {typeData.length > 0 ? (
               <>
-                <ResponsiveContainer width="100%" height={Math.max(140, typeData.length * 34)}>
+                <ResponsiveContainer width="100%" height={Math.max(140, typeData.length * 32)}>
                   <BarChart data={typeData} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
                     <XAxis type="number" tickLine={false} axisLine={false} />
                     <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} width={92} />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--paper-3)' }} />
-                    <Bar dataKey="drinks" radius={[0, 3, 3, 0]}>
-                      {typeData.map((_e, i) => (
-                        <Cell key={i} fill={SERIES[i % SERIES.length]} />
-                      ))}
+                    <Bar dataKey="drinks" radius={[0, 4, 4, 0]}>
+                      {typeData.map((_e, i) => <Cell key={i} fill={SERIES[i % SERIES.length]} />)}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -416,27 +393,16 @@ export default function Dashboard() {
               <div className="text-center py-12 text-sm text-ink3">No data yet.</div>
             )}
           </Card>
-        </Section>
 
-        <Section title="By day of week" description="Which days lean heaviest" className="mb-0">
           <Card>
+            <div className="text-sm font-medium text-ink mb-1">By day of week</div>
+            <div className="text-2xs text-ink3 mb-4">Which days lean heaviest</div>
             {dowData.length > 0 ? (
               <div className="grid grid-cols-[1fr_minmax(0,1fr)] gap-4 items-center">
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
-                    <Pie
-                      data={dowData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={44}
-                      outerRadius={80}
-                      dataKey="drinks"
-                      paddingAngle={1.5}
-                      strokeWidth={0}
-                    >
-                      {dowData.map((_e, i) => (
-                        <Cell key={i} fill={SERIES[i % SERIES.length]} />
-                      ))}
+                    <Pie data={dowData} cx="50%" cy="50%" innerRadius={44} outerRadius={80} dataKey="drinks" paddingAngle={1.5} strokeWidth={0}>
+                      {dowData.map((_e, i) => <Cell key={i} fill={SERIES[i % SERIES.length]} />)}
                     </Pie>
                     <Tooltip content={<CustomTooltip />} />
                   </PieChart>
@@ -463,68 +429,77 @@ export default function Dashboard() {
               <div className="text-center py-12 text-sm text-ink3">No data yet.</div>
             )}
           </Card>
-        </Section>
-      </div>
+        </div>
 
-      {/* This week list */}
-      <Section title="This week" description="Day-by-day rollup">
+        {/* This week list */}
         <Card padded={false}>
+          <div className="flex items-baseline justify-between p-5 pb-3">
+            <div>
+              <div className="text-sm font-medium text-ink">Last 7 days</div>
+              <div className="text-2xs text-ink3 mt-0.5">Day-by-day rollup</div>
+            </div>
+            <Link to="/history" className="text-2xs text-ink3 hover:text-ink flex items-center gap-1">Full history <IconArrowRight width={10} height={10} /></Link>
+          </div>
           {weekStats.length > 0 ? (
-            <div className="divide-y divide-rule">
+            <div className="divide-y divide-rule border-t border-rule">
               {weekStats.map((stat) => (
-                <div key={stat.date} className="flex items-center justify-between px-5 py-3">
-                  <span className="text-sm text-ink">{format(new Date(stat.date), 'EEEE, dd MMM')}</span>
+                <div key={stat.date} className="flex items-center justify-between px-5 py-3 hover:bg-paper3/40 transition-colors">
+                  <div>
+                    <div className="text-sm text-ink">{format(new Date(stat.date), 'EEEE, dd MMM')}</div>
+                    <div className="text-2xs text-ink3 mt-0.5">{stat.entries.length} {stat.entries.length === 1 ? 'drink' : 'drinks'}</div>
+                  </div>
                   <div className="flex gap-6 text-xs font-mono tabular text-ink2">
                     <span>{stat.totalMl.toFixed(0)} ml</span>
                     <span>{stat.totalAlcohol.toFixed(1)} ml pure</span>
-                    <span>{stat.entries.length} {stat.entries.length === 1 ? 'drink' : 'drinks'}</span>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-10 text-sm text-ink3">No entries this week.</div>
+            <div className="text-center py-10 text-sm text-ink3 border-t border-rule">Nothing this week yet.</div>
           )}
         </Card>
-      </Section>
+      </PageBody>
     </Page>
   );
 }
 
-function GoalCard({
-  label,
-  consumption,
-  limit,
-  status,
+function GoalRingCard({
+  label, consumption, limit, status, toneOf,
 }: {
   label: string;
   consumption: number;
   limit: number;
   status: 'safe' | 'warn' | 'danger';
+  toneOf: (s: 'safe' | 'warn' | 'danger') => 'success' | 'warn' | 'danger';
 }) {
-  const pct = limit > 0 ? (consumption / limit) * 100 : 0;
+  const tone = toneOf(status);
+  const pct = limit > 0 ? Math.round((consumption / limit) * 100) : 0;
   const remaining = Math.max(0, limit - consumption);
-  const tone = status === 'danger' ? 'danger' : status === 'warn' ? 'warn' : 'success';
   const badge =
-    status === 'danger' ? <Badge tone="danger">Over limit</Badge> :
-    status === 'warn' ? <Badge tone="warn">Approaching</Badge> :
+    status === 'danger' ? <Badge tone="danger">Over</Badge> :
+    status === 'warn' ? <Badge tone="warn">Close</Badge> :
     <Badge tone="success">On track</Badge>;
+
   return (
     <Card>
-      <div className="flex items-baseline justify-between mb-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="text-xs text-ink3 uppercase tracking-[0.06em] mb-1">{label}</div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl text-ink font-medium tabular">{consumption.toFixed(1)}</span>
-            <span className="text-ink3 text-sm font-mono">/ {limit} std drinks</span>
+          <div className="text-2xs uppercase tracking-[0.06em] text-ink3 mb-2">{label}</div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-medium text-ink tabular tracking-[-0.02em]">{consumption.toFixed(1)}</span>
+            <span className="text-sm text-ink3 font-mono">/ {limit}</span>
           </div>
+          <div className="text-2xs text-ink3 mt-1 tabular">
+            {status === 'danger' ? `${(consumption - limit).toFixed(1)} over limit` : `${remaining.toFixed(1)} remaining`}
+          </div>
+          <div className="mt-3">{badge}</div>
         </div>
-        {badge}
-      </div>
-      <Progress value={consumption} max={limit || 1} tone={tone} />
-      <div className="mt-2 flex justify-between text-xs text-ink3 font-mono tabular">
-        <span>{Math.round(pct)}%</span>
-        <span>{status === 'danger' ? `+${(consumption - limit).toFixed(1)} over` : `${remaining.toFixed(1)} remaining`}</span>
+        <Ring value={consumption} max={limit || 1} size={96} stroke={7} tone={tone}>
+          <div className="text-center">
+            <div className="text-lg font-medium text-ink tabular">{pct}<span className="text-xs text-ink3 font-mono">%</span></div>
+          </div>
+        </Ring>
       </div>
     </Card>
   );

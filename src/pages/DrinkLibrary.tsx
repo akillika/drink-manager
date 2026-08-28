@@ -7,7 +7,7 @@ import {
   collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, Timestamp, where,
 } from 'firebase/firestore';
 import {
-  Page, PageHeader, Card, Empty, Button, Field, Input, Select, Textarea, Badge,
+  Page, PageHeader, PageBody, Card, Empty, Button, Field, Input, Select, Textarea, Badge,
   IconPlus, IconEdit, IconTrash, IconClose, IconSearch, cx,
 } from '../components/ui';
 
@@ -174,7 +174,10 @@ export default function DrinkLibrary() {
   if (loading) {
     return (
       <Page>
-        <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
+        <PageHeader eyebrow="Presets" title="Library" />
+        <PageBody>
+          <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
+        </PageBody>
       </Page>
     );
   }
@@ -190,6 +193,7 @@ export default function DrinkLibrary() {
         actions={<Button variant="primary" onClick={openCreate}><IconPlus /> Add drink</Button>}
       />
 
+      <PageBody>
       <Card padded={false} className="mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 p-4">
           <div className="flex items-center h-10 rounded-md bg-paper border border-rule px-3 gap-2">
@@ -258,6 +262,7 @@ export default function DrinkLibrary() {
           ))}
         </div>
       )}
+      </PageBody>
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

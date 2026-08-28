@@ -6,7 +6,7 @@ import { collection, addDoc, Timestamp, query, where, getDocs, orderBy, updateDo
 import { Session, DrinkLibraryItem } from '../types';
 import { format, differenceInMinutes } from 'date-fns';
 import {
-  Page, PageHeader, Section, Card, Button, Field, Input, Select, Textarea, Badge,
+  Page, PageHeader, PageBody, Section, Card, Button, Field, Input, Select, Textarea, Badge,
   IconRefresh, IconArrowRight, cx,
 } from '../components/ui';
 
@@ -286,6 +286,7 @@ export default function AddEntry() {
         description="Pick a drink, set the amount, save. Under a second if you use a library preset."
       />
 
+      <PageBody>
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         {/* Left: form */}
         <Card>
@@ -475,6 +476,7 @@ export default function AddEntry() {
           )}
         </div>
       </form>
+      </PageBody>
     </Page>
   );
 }

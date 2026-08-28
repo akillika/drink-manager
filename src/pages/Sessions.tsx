@@ -7,7 +7,7 @@ import { db } from '../config/firebase';
 import {
   collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, deleteField, doc, Timestamp, where,
 } from 'firebase/firestore';
-import { Page, PageHeader, Section, Card, Button, Empty, Badge, Field, Input, Textarea, IconPlus, IconEdit, IconTrash, IconClose, IconRefresh } from '../components/ui';
+import { Page, PageHeader, PageBody, Section, Card, Button, Empty, Badge, Field, Input, Textarea, IconPlus, IconEdit, IconTrash, IconClose, IconRefresh } from '../components/ui';
 
 const AUTO_GROUP_THRESHOLD_MINUTES = 120;
 
@@ -248,7 +248,10 @@ export default function Sessions() {
   if (loading) {
     return (
       <Page>
-        <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
+        <PageHeader eyebrow="Grouping" title="Sessions" />
+        <PageBody>
+          <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
+        </PageBody>
       </Page>
     );
   }
@@ -273,6 +276,7 @@ export default function Sessions() {
         }
       />
 
+      <PageBody>
       {ungroupedEntries.length >= 2 ? (
         <div className="mb-8 rounded-md border border-rule bg-paper2 px-4 py-3 text-xs text-ink2">
           {ungroupedEntries.length} ungrouped {ungroupedEntries.length === 1 ? 'entry' : 'entries'} available. Auto-group creates sessions from consecutive entries within {AUTO_GROUP_THRESHOLD_MINUTES} minutes of each other.
@@ -334,6 +338,7 @@ export default function Sessions() {
           })}
         </div>
       )}
+      </PageBody>
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

@@ -5,7 +5,7 @@ import { AlcoholEntry, Session } from '../types';
 import { db } from '../config/firebase';
 import { collection, query, orderBy, getDocs, deleteDoc, doc, where } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
-import { Page, PageHeader, Card, Empty, Button, Badge, IconClock, IconTrash, IconPlus, cx } from '../components/ui';
+import { Page, PageHeader, PageBody, Card, Empty, Button, Badge, IconClock, IconTrash, IconPlus, cx } from '../components/ui';
 
 export default function History() {
   const { user } = useAuth();
@@ -122,7 +122,10 @@ export default function History() {
   if (loading) {
     return (
       <Page>
-        <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
+        <PageHeader eyebrow="Log" title="History" />
+        <PageBody>
+          <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
+        </PageBody>
       </Page>
     );
   }
@@ -149,6 +152,7 @@ export default function History() {
         }
       />
 
+      <PageBody>
       {groupedEntries.size === 0 ? (
         <Empty
           title="Nothing to show yet"
@@ -213,6 +217,7 @@ export default function History() {
             })}
         </div>
       )}
+      </PageBody>
     </Page>
   );
 }

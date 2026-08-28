@@ -9,7 +9,7 @@ function cx(...parts: (string | false | undefined | null)[]) {
 
 // ---- Page shell ----------------------------------------------------
 export function Page({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cx('max-w-page mx-auto w-full px-5 sm:px-8 py-8 sm:py-12', className)}>{children}</div>;
+  return <div className={cx('w-full', className)}>{children}</div>;
 }
 
 export function PageHeader({
@@ -24,18 +24,26 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="flex items-end justify-between gap-6 flex-wrap mb-8 pb-6 border-b border-rule rise">
-      <div className="min-w-0">
-        {eyebrow && (
-          <div className="text-2xs uppercase tracking-[0.14em] text-ink3 font-mono mb-2">{eyebrow}</div>
-        )}
-        <h1 className="text-3xl font-medium text-ink">{title}</h1>
-        {description && (
-          <p className="text-ink2 text-md mt-2 max-w-xl">{description}</p>
-        )}
+    <header className="sticky top-0 z-10 bg-paper/85 backdrop-blur border-b border-rule">
+      <div className="max-w-page mx-auto w-full px-5 sm:px-8 py-4 flex items-center justify-between gap-6 flex-wrap">
+        <div className="min-w-0">
+          {eyebrow && (
+            <div className="text-2xs uppercase tracking-[0.14em] text-ink3 font-mono">{eyebrow}</div>
+          )}
+          <h1 className="text-xl font-medium text-ink leading-tight mt-0.5">{title}</h1>
+          {description && (
+            <p className="text-ink3 text-xs mt-0.5 hidden sm:block">{description}</p>
+          )}
+        </div>
+        {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
       </div>
-      {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
     </header>
+  );
+}
+
+export function PageBody({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={cx('max-w-page mx-auto w-full px-5 sm:px-8 py-6 sm:py-8', className)}>{children}</div>
   );
 }
 
@@ -241,6 +249,107 @@ export function Progress({
     <div className="w-full h-1.5 bg-paper3 rounded-full overflow-hidden">
       <div className={cx(bar, 'h-full transition-[width] duration-500 ease-out')} style={{ width: `${pct}%` }} />
     </div>
+  );
+}
+
+// ---- Ring gauge — for goal progress ------------------------------
+export function Ring({
+  value,
+  max = 100,
+  size = 72,
+  stroke = 6,
+  tone = 'accent',
+  children,
+}: {
+  value: number;
+  max?: number;
+  size?: number;
+  stroke?: number;
+  tone?: 'accent' | 'warn' | 'danger' | 'success';
+  children?: ReactNode;
+}) {
+  const pct = Math.max(0, Math.min(1, max > 0 ? value / max : 0));
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const color = { accent: 'var(--ink)', warn: 'var(--warn)', danger: 'var(--danger)', success: 'var(--success)' }[tone];
+  return (
+    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle
+          cx={size / 2} cy={size / 2} r={r}
+          fill="none" stroke="var(--rule)" strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2} cy={size / 2} r={r}
+          fill="none" stroke={color} strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${c * pct} ${c}`}
+          style={{ transition: 'stroke-dasharray 600ms cubic-bezier(0.2, 0.7, 0.3, 1)' }}
+        />
+      </svg>
+      {children && (
+        <div className="absolute inset-0 flex items-center justify-center">{children}</div>
+      )}
+    </div>
+  );
+}
+
+// ---- StatCard — a real app-like stat tile ------------------------
+export function StatCard({
+  label, value, unit, hint, accent, className,
+}: {
+  label: ReactNode; value: ReactNode; unit?: ReactNode; hint?: ReactNode;
+  accent?: 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'pink' | 'none';
+  className?: string;
+}) {
+  const stripe = accent && accent !== 'none' ? {
+    blue:   'before:bg-[#305a9a]',
+    green:  'before:bg-[#3f7a3f]',
+    amber:  'before:bg-[#8e5d17]',
+    red:    'before:bg-[#9c2e2e]',
+    purple: 'before:bg-[#6a3f8c]',
+    pink:   'before:bg-[#a45078]',
+  }[accent] : '';
+  return (
+    <div className={cx(
+      'relative bg-paper2 border border-rule rounded-lg p-5 overflow-hidden',
+      'before:absolute before:left-0 before:top-0 before:bottom-0 before:w-0.5', stripe,
+      className,
+    )}>
+      <div className="text-2xs uppercase tracking-[0.06em] text-ink3 font-medium mb-2">{label}</div>
+      <div className="flex items-baseline gap-1.5">
+        <div className="text-3xl font-medium text-ink tabular tracking-[-0.02em]">{value}</div>
+        {unit && <div className="text-xs text-ink3 font-mono">{unit}</div>}
+      </div>
+      {hint && <div className="text-2xs text-ink3 mt-2 tabular">{hint}</div>}
+    </div>
+  );
+}
+
+// ---- Chip - small pill for quick actions -------------------------
+export function Chip({
+  children, tone, onClick, active,
+}: {
+  children: ReactNode;
+  tone?: 'neutral' | 'accent';
+  onClick?: () => void;
+  active?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      type="button"
+      className={cx(
+        'inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-colors border',
+        active
+          ? 'bg-ink text-paper border-ink'
+          : tone === 'accent'
+            ? 'bg-paper3 text-ink border-rule2 hover:bg-paper4'
+            : 'bg-paper2 text-ink2 border-rule hover:text-ink hover:bg-paper3 hover:border-rule2',
+      )}
+    >
+      {children}
+    </button>
   );
 }
 
