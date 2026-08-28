@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Button, IconGoogle, IconRefresh } from '../components/ui';
+import { IconGoogle, IconRefresh } from '../components/ui';
 
 /**
  * The Ledger. A login page that behaves like the inside cover of a private
