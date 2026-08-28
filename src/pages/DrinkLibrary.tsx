@@ -10,6 +10,8 @@ import {
   Page, PageHeader, PageBody, Card, Empty, Button, Field, Input, Select, Textarea, Badge,
   IconPlus, IconEdit, IconTrash, IconClose, IconSearch, cx,
 } from '../components/ui';
+import { DEMO_MODE } from '../config/demo';
+import { DEMO_LIBRARY } from '../config/demoData';
 
 const DRINK_CATEGORIES = ['Beer', 'Whisky', 'Rum', 'Vodka', 'Cocktail', 'Other'];
 const OZ_TO_ML = 29.5735;
@@ -47,6 +49,11 @@ export default function DrinkLibrary() {
 
   const loadDrinks = async () => {
     if (!user) return;
+    if (DEMO_MODE) {
+      setDrinks([...DEMO_LIBRARY].sort((a, b) => (b.timesUsed || 0) - (a.timesUsed || 0)));
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const drinksQuery = query(

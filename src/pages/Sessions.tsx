@@ -8,6 +8,8 @@ import {
   collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, deleteField, doc, Timestamp, where,
 } from 'firebase/firestore';
 import { Page, PageHeader, PageBody, Section, Card, Button, Empty, Badge, Field, Input, Textarea, IconPlus, IconEdit, IconTrash, IconClose, IconRefresh } from '../components/ui';
+import { DEMO_MODE } from '../config/demo';
+import { DEMO_ENTRIES, DEMO_SESSIONS } from '../config/demoData';
 
 const AUTO_GROUP_THRESHOLD_MINUTES = 120;
 
@@ -30,6 +32,12 @@ export default function Sessions() {
 
   const loadData = async () => {
     if (!user) return;
+    if (DEMO_MODE) {
+      setSessions([...DEMO_SESSIONS].sort((a, b) => b.startTime.getTime() - a.startTime.getTime()));
+      setEntries([...DEMO_ENTRIES].sort((a, b) => b.date.getTime() - a.date.getTime()));
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const sessionsQuery = query(

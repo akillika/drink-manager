@@ -2,47 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design tokens ------------------------------------------------------- */
+/* Apple Fitness / Health inspired tokens.
+   Dark-first, high-contrast, saturated accent colors, iOS-scale type. */
+
 :root {
   --font-sans:
     ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Text',
-    'Segoe UI', system-ui, sans-serif;
+    'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
   --font-mono:
     ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-serif:
+    ui-serif, 'New York', 'Iowan Old Style', Georgia, serif;
 
-  --paper:   #f8f7f4;
-  --paper-2: #ffffff;
-  --paper-3: #efeee9;
-  --paper-4: #e5e3dc;
-  --ink:     #14110b;
-  --ink-2:   #4d4a44;
-  --ink-3:   #86827a;
-  --ink-4:   #b5b1a8;
-  --rule:    rgba(20, 16, 8, 0.09);
-  --rule-2:  rgba(20, 16, 8, 0.18);
-  --accent:  #14110b;
-  --success: #3f7a3f;
-  --warn:    #8e5d17;
-  --danger:  #9c2e2e;
+  /* Light mode - warm off-white paper */
+  --bg:            #f5f5f7;
+  --bg-2:          #ffffff;
+  --bg-3:          #eeeef2;
+  --bg-4:          #e5e5ea;
+  --card:          #ffffff;
+  --card-2:        #f2f2f7;
+  --ink:           #000000;
+  --ink-2:         #3c3c43;
+  --ink-3:         #8e8e93;
+  --ink-4:         #c7c7cc;
+  --separator:     rgba(60, 60, 67, 0.14);
+  --separator-2:   rgba(60, 60, 67, 0.24);
+
+  /* iOS system colors */
+  --red:    #FF3B30;
+  --orange: #FF9500;
+  --yellow: #FFCC00;
+  --green:  #34C759;
+  --mint:   #00C7BE;
+  --teal:   #30B0C7;
+  --cyan:   #32ADE6;
+  --blue:   #007AFF;
+  --indigo: #5856D6;
+  --purple: #AF52DE;
+  --pink:   #FF2D55;
+  --brown:  #A2845E;
 
   color-scheme: light;
 }
 
 :root.dark {
-  --paper:   #0d0c0a;
-  --paper-2: #131210;
-  --paper-3: #1b1a17;
-  --paper-4: #23221e;
-  --ink:     #f0eddf;
-  --ink-2:   #a4a196;
-  --ink-3:   #6f6c62;
-  --ink-4:   #3f3d38;
-  --rule:    rgba(240, 235, 220, 0.09);
-  --rule-2:  rgba(240, 235, 220, 0.20);
-  --accent:  #fafaf5;
-  --success: #7fb884;
-  --warn:    #dcb073;
-  --danger:  #e08a8a;
+  /* Dark mode - pure black canvas with charcoal cards */
+  --bg:            #000000;
+  --bg-2:          #0a0a0c;
+  --bg-3:          #17171b;
+  --bg-4:          #2c2c2e;
+  --card:          #1c1c1e;
+  --card-2:        #2c2c2e;
+  --ink:           #ffffff;
+  --ink-2:         #ebebf5;
+  --ink-3:         #8e8e93;
+  --ink-4:         #48484a;
+  --separator:     rgba(84, 84, 88, 0.35);
+  --separator-2:   rgba(84, 84, 88, 0.55);
+
+  /* iOS system colors, dark variants */
+  --red:    #FF453A;
+  --orange: #FF9F0A;
+  --yellow: #FFD60A;
+  --green:  #30D158;
+  --mint:   #63E6E2;
+  --teal:   #40C8E0;
+  --cyan:   #64D2FF;
+  --blue:   #0A84FF;
+  --indigo: #5E5CE6;
+  --purple: #BF5AF2;
+  --pink:   #FF375F;
+  --brown:  #AC8E68;
 
   color-scheme: dark;
 }
@@ -54,9 +84,9 @@ body {
   margin: 0;
   font-family: var(--font-sans);
   font-size: 14px;
-  line-height: 1.55;
+  line-height: 1.4;
   color: var(--ink);
-  background: var(--paper);
+  background: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'ss01', 'cv11', 'kern';
@@ -64,38 +94,33 @@ body {
 }
 #root { min-height: 100vh; }
 
-::selection { background: var(--ink); color: var(--paper); }
+::selection { background: var(--blue); color: white; }
 
-/* Numbers should be tabular by default in this app (drinks, ml, %) */
 .tabular { font-variant-numeric: tabular-nums; }
 
-/* Scrollbar restrained */
 *::-webkit-scrollbar { width: 10px; height: 10px; }
-*::-webkit-scrollbar-thumb { background: var(--rule-2); border-radius: 999px; border: 3px solid var(--paper); }
+*::-webkit-scrollbar-thumb { background: var(--separator-2); border-radius: 999px; border: 3px solid var(--bg); }
 *::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
 
-/* Focus ring — same on every focusable element */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--blue);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
-/* One gentle fade utility for section mounts. Nothing else. */
 @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-.rise { animation: rise 220ms ease-out both; }
-
-/* Login-specific: a stagger + a stroke-in for the ledger. Restrained. */
+.rise { animation: rise 260ms ease-out both; }
 @keyframes ink-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .ink-in { animation: ink-in 480ms cubic-bezier(0.2, 0.7, 0.3, 1) both; }
 
 @keyframes glass-fill { from { stroke-dashoffset: 60; opacity: 0; } to { stroke-dashoffset: 0; opacity: 0.55; } }
 .glass-fill { stroke-dasharray: 60; animation: glass-fill 1400ms cubic-bezier(0.4, 0.1, 0.2, 1) 300ms both; }
 
-@keyframes draw-stroke { from { stroke-dashoffset: var(--len, 400); } to { stroke-dashoffset: 0; } }
-.draw-stroke { animation: draw-stroke 900ms cubic-bezier(0.4, 0.1, 0.2, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
 
-/* Login paper texture — very subtle, SVG noise inlined as background */
+/* Login paper texture (kept for Login page) */
 .login-paper {
   background-image:
     url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.078 0 0 0 0 0.067 0 0 0 0 0.043 0 0 0 0.045 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -106,23 +131,19 @@ body {
     url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.95 0 0 0 0 0.92 0 0 0 0 0.86 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-@media (prefers-reduced-motion: reduce) {
-  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
-}
-
-/* Recharts overrides — restrained legibility */
-.recharts-cartesian-axis-tick-value { fill: var(--ink-3) !important; font-size: 11px; font-family: var(--font-mono); }
-.recharts-cartesian-axis-line, .recharts-cartesian-axis-tick-line { stroke: var(--rule) !important; }
-.recharts-cartesian-grid-horizontal line, .recharts-cartesian-grid-vertical line { stroke: var(--rule) !important; }
+/* Recharts overrides */
+.recharts-cartesian-axis-tick-value { fill: var(--ink-3) !important; font-size: 11px; font-family: var(--font-sans); font-weight: 500; }
+.recharts-cartesian-axis-line, .recharts-cartesian-axis-tick-line { stroke: var(--separator) !important; }
+.recharts-cartesian-grid-horizontal line, .recharts-cartesian-grid-vertical line { stroke: var(--separator) !important; }
 .recharts-tooltip-wrapper { outline: none; }
 .recharts-default-tooltip {
-  background: var(--paper-2) !important;
-  border: 1px solid var(--rule-2) !important;
-  border-radius: 6px !important;
-  padding: 8px 10px !important;
-  font-family: var(--font-mono) !important;
-  font-size: 11.5px !important;
+  background: var(--card-2) !important;
+  border: 1px solid var(--separator-2) !important;
+  border-radius: 10px !important;
+  padding: 8px 12px !important;
+  font-family: var(--font-sans) !important;
+  font-size: 12px !important;
   color: var(--ink) !important;
-  box-shadow: 0 8px 24px -12px rgba(0,0,0,0.15) !important;
+  box-shadow: 0 12px 40px -12px rgba(0,0,0,0.35) !important;
 }
-.recharts-tooltip-label { color: var(--ink-3) !important; font-size: 10.5px !important; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; }
+.recharts-tooltip-label { color: var(--ink-3) !important; font-size: 11px !important; margin-bottom: 4px; }

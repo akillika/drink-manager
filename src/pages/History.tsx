@@ -6,6 +6,8 @@ import { db } from '../config/firebase';
 import { collection, query, orderBy, getDocs, deleteDoc, doc, where } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
 import { Page, PageHeader, PageBody, Card, Empty, Button, Badge, IconClock, IconTrash, IconPlus, cx } from '../components/ui';
+import { DEMO_MODE } from '../config/demo';
+import { DEMO_ENTRIES, DEMO_SESSIONS } from '../config/demoData';
 
 export default function History() {
   const { user } = useAuth();
@@ -21,6 +23,20 @@ export default function History() {
 
   const loadEntries = async () => {
     if (!user) return;
+    if (DEMO_MODE) {
+      const now = new Date();
+      let filtered = DEMO_ENTRIES;
+      if (filter !== 'all') {
+        const startDate = new Date(now);
+        if (filter === 'week') startDate.setDate(startDate.getDate() - 7);
+        else startDate.setMonth(startDate.getMonth() - 1);
+        filtered = filtered.filter(e => e.date >= startDate);
+      }
+      setEntries([...filtered].sort((a, b) => b.date.getTime() - a.date.getTime()));
+      setSessions(DEMO_SESSIONS);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const entriesQuery = query(collection(db, 'entries'), where('userId', '==', user.uid));
@@ -82,6 +98,7 @@ export default function History() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this entry?')) return;
+    if (DEMO_MODE) { setEntries(entries.filter((e) => e.id !== id)); return; }
     try {
       await deleteDoc(doc(db, 'entries', id));
       setEntries(entries.filter((e) => e.id !== id));

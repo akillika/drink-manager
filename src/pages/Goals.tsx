@@ -4,6 +4,8 @@ import { Goal } from '../types';
 import { db } from '../config/firebase';
 import { collection, query, getDocs, addDoc, updateDoc, doc, Timestamp, where } from 'firebase/firestore';
 import { Page, PageHeader, PageBody, Section, Card, Button, Field, Input, Badge } from '../components/ui';
+import { DEMO_MODE } from '../config/demo';
+import { DEMO_GOALS } from '../config/demoData';
 
 export default function Goals() {
   const { user } = useAuth();
@@ -24,6 +26,17 @@ export default function Goals() {
 
   const loadGoals = async () => {
     if (!user) return;
+    if (DEMO_MODE) {
+      DEMO_GOALS.forEach((goal) => {
+        if (goal.type === 'weekly') {
+          setWeeklyGoal(goal); setWeeklyLimit(goal.limit); setWeeklyActive(goal.isActive);
+        } else if (goal.type === 'monthly') {
+          setMonthlyGoal(goal); setMonthlyLimit(goal.limit); setMonthlyActive(goal.isActive);
+        }
+      });
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const goalsQuery = query(collection(db, 'goals'), where('userId', '==', user.uid));

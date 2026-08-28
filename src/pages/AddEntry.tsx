@@ -9,6 +9,8 @@ import {
   Page, PageHeader, PageBody, Section, Card, Button, Field, Input, Select, Textarea, Badge,
   IconRefresh, IconArrowRight, cx,
 } from '../components/ui';
+import { DEMO_MODE } from '../config/demo';
+import { DEMO_LIBRARY, DEMO_SESSIONS } from '../config/demoData';
 
 const DRINK_TYPES = [
   { label: 'Beer',     defaultAmountOz: 12,  defaultAmountMl: 650, defaultPercentage: 5 },
@@ -81,6 +83,7 @@ export default function AddEntry() {
 
   const loadDrinkLibrary = async () => {
     if (!user) return;
+    if (DEMO_MODE) { setDrinkLibrary(DEMO_LIBRARY); return; }
     try {
       const drinksQuery = query(
         collection(db, 'drinkLibrary'),
@@ -124,6 +127,7 @@ export default function AddEntry() {
 
   const loadSessions = async () => {
     if (!user) return;
+    if (DEMO_MODE) { setSessions(DEMO_SESSIONS); return; }
     try {
       const sessionsQuery = query(
         collection(db, 'sessions'),
@@ -150,6 +154,7 @@ export default function AddEntry() {
 
   const checkAutoSession = async () => {
     if (!user) return;
+    if (DEMO_MODE) return;
     try {
       const entryTime = customTime ? logTime : new Date();
       const recentQuery = query(
@@ -196,6 +201,12 @@ export default function AddEntry() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    if (DEMO_MODE) {
+      alert('Demo mode: writes are disabled. In the real app, this would save your entry.');
+      setSubmitting(false);
+      navigate('/');
+      return;
+    }
     try {
       const trimmedNotes = notes.trim();
       const dateToUse = customTime ? logTime : new Date();
