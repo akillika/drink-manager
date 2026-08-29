@@ -1,13 +1,21 @@
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
 import { useAuth } from '../contexts/AuthContext';
 import { AlcoholEntry, Session } from '../types';
 import { db } from '../config/firebase';
 import { collection, query, orderBy, getDocs, deleteDoc, doc, where } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
-import { Page, PageHeader, PageBody, Card, Empty, Button, Badge, IconClock, IconTrash, IconPlus, cx } from '../components/ui';
+import { PageBody, Button, IconClock, IconTrash, IconPlus, IconGlass, IconList, cx } from '../components/ui';
 import { DEMO_MODE } from '../config/demo';
 import { DEMO_ENTRIES, DEMO_SESSIONS } from '../config/demoData';
+
+const STANDARD_DRINK_ALCOHOL_ML = 12.68;
+
+const TYPE_COLOR: Record<string, string> = {
+  Beer: '#FF9F0A', Whisky: '#AC8E68', Rum: '#BF5AF2', Vodka: '#64D2FF',
+  Wine: '#FF375F', Cocktail: '#5E5CE6', Water: '#40C8E0', Other: '#8e8e93',
+};
+const typeColor = (t: string) => TYPE_COLOR[t] || '#8e8e93';
 
 export default function History() {
   const { user } = useAuth();
@@ -30,7 +38,7 @@ export default function History() {
         const startDate = new Date(now);
         if (filter === 'week') startDate.setDate(startDate.getDate() - 7);
         else startDate.setMonth(startDate.getMonth() - 1);
-        filtered = filtered.filter(e => e.date >= startDate);
+        filtered = filtered.filter((e) => e.date >= startDate);
       }
       setEntries([...filtered].sort((a, b) => b.date.getTime() - a.date.getTime()));
       setSessions(DEMO_SESSIONS);
@@ -39,52 +47,38 @@ export default function History() {
     }
     try {
       setLoading(true);
-      const entriesQuery = query(collection(db, 'entries'), where('userId', '==', user.uid));
-      const snapshot = await getDocs(entriesQuery);
-      const loadedEntries: AlcoholEntry[] = [];
-      snapshot.forEach((docSnapshot) => {
-        const data = docSnapshot.data();
-        const entry: AlcoholEntry = { id: docSnapshot.id, ...data, date: data.date.toDate() } as AlcoholEntry;
+      const snapshot = await getDocs(query(collection(db, 'entries'), where('userId', '==', user.uid)));
+      const loaded: AlcoholEntry[] = [];
+      snapshot.forEach((d) => {
+        const data = d.data();
+        const entry: AlcoholEntry = { id: d.id, ...data, date: data.date.toDate() } as AlcoholEntry;
         if (entry.userId !== user.uid) return;
         if (filter !== 'all') {
-          const now = new Date();
-          const startDate = new Date(now);
+          const startDate = new Date();
           if (filter === 'week') startDate.setDate(startDate.getDate() - 7);
           else startDate.setMonth(startDate.getMonth() - 1);
-          if (entry.date >= startDate) loadedEntries.push(entry);
+          if (entry.date >= startDate) loaded.push(entry);
         } else {
-          loadedEntries.push(entry);
+          loaded.push(entry);
         }
       });
-      loadedEntries.sort((a, b) => b.date.getTime() - a.date.getTime());
-      setEntries(loadedEntries);
+      loaded.sort((a, b) => b.date.getTime() - a.date.getTime());
+      setEntries(loaded);
 
-      const sessionsQuery = query(
-        collection(db, 'sessions'),
-        where('userId', '==', user.uid),
-        orderBy('startTime', 'desc')
-      );
-      const sessionsSnapshot = await getDocs(sessionsQuery);
+      const sessionsSnap = await getDocs(query(collection(db, 'sessions'), where('userId', '==', user.uid), orderBy('startTime', 'desc')));
       const loadedSessions: Session[] = [];
-      sessionsSnapshot.forEach((docSnapshot) => {
-        const data = docSnapshot.data();
+      sessionsSnap.forEach((d) => {
+        const data = d.data();
         loadedSessions.push({
-          id: docSnapshot.id,
-          ...data,
+          id: d.id, ...data,
           startTime: data.startTime.toDate(),
           endTime: data.endTime?.toDate(),
           createdAt: data.createdAt.toDate(),
         } as Session);
       });
       setSessions(loadedSessions);
-    } catch (error: any) {
-      console.error('Error loading entries:', error);
-      if (error?.code === 'failed-precondition' || error?.message?.includes('index')) {
-        alert(`Firestore Query Error: ${error.message}\n\nYou may need to create a composite index. Check the browser console for the link.`);
-      } else {
-        alert(`Error loading entries: ${error?.message || 'Unknown error'}`);
-      }
-      setEntries([]);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -92,149 +86,172 @@ export default function History() {
 
   const getSessionName = (sessionId?: string): string | null => {
     if (!sessionId) return null;
-    const session = sessions.find(s => s.id === sessionId);
-    return session ? session.name : null;
+    return sessions.find((s) => s.id === sessionId)?.name || null;
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this entry?')) return;
+    if (!confirm('Delete this drink?')) return;
     if (DEMO_MODE) { setEntries(entries.filter((e) => e.id !== id)); return; }
     try {
       await deleteDoc(doc(db, 'entries', id));
       setEntries(entries.filter((e) => e.id !== id));
-    } catch (error) {
-      console.error('Error deleting entry:', error);
-      alert('Failed to delete entry. Please try again.');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete.');
     }
   };
 
-  const groupEntriesByDate = (entries: AlcoholEntry[]) => {
-    const grouped = new Map<string, AlcoholEntry[]>();
-    entries.forEach((entry) => {
-      const dateKey = format(entry.date, 'yyyy-MM-dd');
-      if (!grouped.has(dateKey)) grouped.set(dateKey, []);
-      grouped.get(dateKey)!.push(entry);
-    });
-    return grouped;
+  const grouped = new Map<string, AlcoholEntry[]>();
+  entries.forEach((e) => {
+    const key = format(e.date, 'yyyy-MM-dd');
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push(e);
+  });
+
+  const dayLabel = (dateStr: string) => {
+    const d = new Date(dateStr);
+    if (isToday(d)) return 'Today';
+    if (isYesterday(d)) return 'Yesterday';
+    return format(d, 'EEEE, dd MMMM');
   };
 
-  const calculateDayTotal = (dayEntries: AlcoholEntry[]) => {
-    const totalMl = dayEntries.reduce((sum, e) => sum + e.amount, 0);
-    const totalAlcohol = dayEntries.reduce((sum, e) => sum + (e.amount * e.alcoholPercentage / 100), 0);
-    return { totalMl, totalAlcohol };
-  };
+  const stdOf = (e: AlcoholEntry) => (e.amount * e.alcoholPercentage / 100) / STANDARD_DRINK_ALCOHOL_ML;
 
-  const filterBtn = (v: 'all' | 'week' | 'month', label: string) => (
+  const filterPill = (v: 'all' | 'week' | 'month', label: string) => (
     <button
       onClick={() => setFilter(v)}
       className={cx(
-        'h-8 px-3 text-xs font-medium transition-colors border-r border-rule last:border-r-0',
-        filter === v ? 'bg-paper3 text-ink' : 'text-ink3 hover:text-ink hover:bg-paper3',
+        'h-8 px-4 text-xs font-semibold rounded-full transition-colors',
+        filter === v ? 'bg-card text-ink shadow-sm' : 'text-ink3 hover:text-ink',
       )}
     >
       {label}
     </button>
   );
 
-  if (loading) {
-    return (
-      <Page>
-        <PageHeader eyebrow="Log" title="History" />
-        <PageBody>
-          <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
-        </PageBody>
-      </Page>
-    );
-  }
-
-  const groupedEntries = groupEntriesByDate(entries);
-
   return (
-    <Page>
-      <PageHeader
-        eyebrow="Log"
-        title="History"
-        description="Every drink you've logged, grouped by day."
-        actions={
-          <>
-            <div className="inline-flex border border-rule rounded-md overflow-hidden">
-              {filterBtn('all', 'All time')}
-              {filterBtn('week', 'Last week')}
-              {filterBtn('month', 'Last month')}
-            </div>
-            <Link to="/add">
-              <Button variant="primary"><IconPlus /> Log entry</Button>
-            </Link>
-          </>
-        }
-      />
+    <div>
+      <div className="sticky top-0 z-10 bg-bg2/85 backdrop-blur border-b border-separator px-6 lg:px-8 py-4 flex items-center justify-between rise">
+        <div>
+          <div className="text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">Timeline</div>
+          <h1 className="text-2xl font-bold text-ink tracking-[-0.02em]">History</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="inline-flex bg-bg3 rounded-full p-1">
+            {filterPill('all', 'All')}
+            {filterPill('week', 'Week')}
+            {filterPill('month', 'Month')}
+          </div>
+          <Link to="/add">
+            <Button variant="primary" className="bg-pink text-white border-pink hover:brightness-110">
+              <IconPlus /> Add drink
+            </Button>
+          </Link>
+        </div>
+      </div>
 
-      <PageBody>
-      {groupedEntries.size === 0 ? (
-        <Empty
-          title="Nothing to show yet"
-          description="Log your first entry and it'll appear here."
-          action={<Link to="/add"><Button variant="primary"><IconPlus /> Log entry</Button></Link>}
-        />
-      ) : (
-        <div className="space-y-4">
-          {Array.from(groupedEntries.entries())
-            .sort((a, b) => b[0].localeCompare(a[0]))
-            .map(([date, dayEntries]) => {
-              const { totalMl, totalAlcohol } = calculateDayTotal(dayEntries);
-              return (
-                <Card key={date} padded={false} className="rise">
-                  <div className="flex items-baseline justify-between px-5 py-4 border-b border-rule">
-                    <h3 className="text-sm font-medium text-ink">
-                      {format(new Date(date), 'EEEE, dd MMMM yyyy')}
-                    </h3>
-                    <div className="text-xs font-mono tabular text-ink3 flex gap-4">
-                      <span>{totalMl.toFixed(0)} ml</span>
-                      <span>{totalAlcohol.toFixed(1)} ml pure</span>
-                      <span>{dayEntries.length} {dayEntries.length === 1 ? 'drink' : 'drinks'}</span>
-                    </div>
-                  </div>
-                  <div className="divide-y divide-rule">
-                    {dayEntries.map((entry) => (
-                      <div key={entry.id} className="flex items-start justify-between px-5 py-3.5 hover:bg-paper3/40 transition-colors">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm text-ink font-medium">{entry.type}</span>
-                            {entry.sessionId && getSessionName(entry.sessionId) && (
-                              <Link to="/sessions">
-                                <Badge tone="neutral" className="!normal-case tracking-normal">
-                                  <IconClock width={10} height={10} /> {getSessionName(entry.sessionId)}
-                                </Badge>
-                              </Link>
-                            )}
-                          </div>
-                          <div className="text-xs text-ink3 font-mono tabular">
-                            {entry.amount} ml · {entry.alcoholPercentage}% ABV · {(entry.amount * entry.alcoholPercentage / 100).toFixed(1)} ml pure
-                          </div>
-                          {entry.notes && (
-                            <div className="text-xs text-ink3 mt-1">{entry.notes}</div>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 ml-4 shrink-0">
-                          <span className="text-xs font-mono tabular text-ink3">{format(entry.date, 'HH:mm')}</span>
-                          <button
-                            onClick={() => entry.id && handleDelete(entry.id)}
-                            className="p-1.5 rounded-md text-ink3 hover:text-danger hover:bg-paper3 transition-colors"
-                            aria-label="Delete"
-                            title="Delete"
-                          >
-                            <IconTrash />
-                          </button>
+      <PageBody className="!px-6 lg:!px-8 !py-6">
+        {loading ? (
+          <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
+        ) : grouped.size === 0 ? (
+          <div className="bg-card rounded-3xl py-20 px-8 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--blue)22] text-blue mb-4">
+              <IconList width={22} height={22} />
+            </div>
+            <div className="text-lg font-semibold text-ink mb-1">Nothing here yet</div>
+            <div className="text-sm text-ink3 max-w-sm mx-auto mb-6">Log your first drink and every entry will show up here, grouped by day.</div>
+            <Link to="/add">
+              <Button variant="primary" className="bg-pink text-white border-pink hover:brightness-110">
+                <IconPlus /> Log your first drink
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {Array.from(grouped.entries())
+              .sort((a, b) => b[0].localeCompare(a[0]))
+              .map(([date, dayEntries]) => {
+                const totalMl = dayEntries.reduce((s, e) => s + e.amount, 0);
+                const totalAlcohol = dayEntries.reduce((s, e) => s + (e.amount * e.alcoholPercentage / 100), 0);
+                const std = dayEntries.reduce((s, e) => s + stdOf(e), 0);
+                return (
+                  <div key={date} className="bg-card rounded-3xl overflow-hidden">
+                    <div className="flex items-baseline justify-between px-6 pt-5 pb-3">
+                      <div>
+                        <div className="text-lg font-bold text-ink tracking-[-0.015em]">{dayLabel(date)}</div>
+                        <div className="text-2xs uppercase tracking-[0.08em] font-semibold text-ink3 mt-0.5">
+                          {format(new Date(date), 'dd MMMM')} · {dayEntries.length} {dayEntries.length === 1 ? 'drink' : 'drinks'}
                         </div>
                       </div>
-                    ))}
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-pink tabular tracking-[-0.02em]">{std.toFixed(1)}</div>
+                        <div className="text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">std drinks</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-px bg-separator border-t border-separator">
+                      <MetricCell label="Volume" value={`${totalMl.toFixed(0)}`} unit="ml" />
+                      <MetricCell label="Pure alcohol" value={`${totalAlcohol.toFixed(1)}`} unit="ml" />
+                      <MetricCell label="Drinks" value={String(dayEntries.length)} unit={dayEntries.length === 1 ? 'entry' : 'entries'} />
+                    </div>
+                    <div className="divide-y divide-separator border-t border-separator">
+                      {dayEntries.map((entry) => {
+                        const c = typeColor(entry.type);
+                        const s = stdOf(entry);
+                        return (
+                          <div key={entry.id} className="flex items-center gap-4 px-6 py-4 hover:bg-bg3/40 transition-colors group">
+                            <span className="inline-flex items-center justify-center w-11 h-11 rounded-2xl shrink-0" style={{ background: `${c}22`, color: c }}>
+                              <IconGlass width={17} height={17} />
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-md text-ink font-semibold">{entry.type}</span>
+                                {entry.sessionId && getSessionName(entry.sessionId) && (
+                                  <Link to="/sessions" className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-[var(--purple)22] text-purple text-2xs font-semibold">
+                                    <IconClock width={9} height={9} /> {getSessionName(entry.sessionId)}
+                                  </Link>
+                                )}
+                              </div>
+                              <div className="text-xs text-ink3 font-mono tabular">
+                                {entry.amount} ml · {entry.alcoholPercentage}% · {s.toFixed(2)} std
+                              </div>
+                              {entry.notes && <div className="text-xs text-ink2 mt-1">{entry.notes}</div>}
+                            </div>
+                            <div className="text-right shrink-0 flex items-center gap-4">
+                              <div>
+                                <div className="text-sm text-ink font-semibold tabular">{format(entry.date, 'HH:mm')}</div>
+                                <div className="text-2xs text-ink3 tabular">{(entry.amount * entry.alcoholPercentage / 100).toFixed(1)} ml pure</div>
+                              </div>
+                              <button
+                                onClick={() => entry.id && handleDelete(entry.id)}
+                                className="inline-flex items-center justify-center w-9 h-9 rounded-xl text-ink3 hover:text-red hover:bg-[var(--red)18] transition-colors opacity-0 group-hover:opacity-100"
+                                aria-label="Delete"
+                                title="Delete"
+                              >
+                                <IconTrash />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </Card>
-              );
-            })}
-        </div>
-      )}
+                );
+              })}
+          </div>
+        )}
       </PageBody>
-    </Page>
+    </div>
+  );
+}
+
+function MetricCell({ label, value, unit }: { label: string; value: string; unit: string }) {
+  return (
+    <div className="bg-card p-4">
+      <div className="text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">{label}</div>
+      <div className="flex items-baseline gap-1 mt-1">
+        <span className="text-lg font-bold text-ink tabular">{value}</span>
+        <span className="text-xs text-ink3 font-mono">{unit}</span>
+      </div>
+    </div>
   );
 }

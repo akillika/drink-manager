@@ -6,19 +6,20 @@ import { collection, addDoc, Timestamp, query, where, getDocs, orderBy, updateDo
 import { Session, DrinkLibraryItem } from '../types';
 import { format, differenceInMinutes } from 'date-fns';
 import {
-  Page, PageHeader, PageBody, Section, Card, Button, Field, Input, Select, Textarea, Badge,
-  IconRefresh, IconArrowRight, cx,
+  PageBody, Button, Field, Input, Select, Textarea,
+  IconRefresh, IconGlass, IconClock, IconChart, IconTarget, cx,
 } from '../components/ui';
 import { DEMO_MODE } from '../config/demo';
 import { DEMO_LIBRARY, DEMO_SESSIONS } from '../config/demoData';
 
 const DRINK_TYPES = [
-  { label: 'Beer',     defaultAmountOz: 12,  defaultAmountMl: 650, defaultPercentage: 5 },
-  { label: 'Whisky',   defaultAmountOz: 1.5, defaultAmountMl: 30,  defaultPercentage: 40 },
-  { label: 'Rum',      defaultAmountOz: 1.5, defaultAmountMl: 30,  defaultPercentage: 40 },
-  { label: 'Vodka',    defaultAmountOz: 1.5, defaultAmountMl: 30,  defaultPercentage: 40 },
-  { label: 'Cocktail', defaultAmountOz: 6,   defaultAmountMl: 150, defaultPercentage: 15 },
-  { label: 'Other',    defaultAmountOz: 4,   defaultAmountMl: 100, defaultPercentage: 10 },
+  { label: 'Beer',     defaultAmountOz: 12,  defaultAmountMl: 650, defaultPercentage: 5,  color: '#FF9F0A' },
+  { label: 'Whisky',   defaultAmountOz: 1.5, defaultAmountMl: 30,  defaultPercentage: 40, color: '#AC8E68' },
+  { label: 'Rum',      defaultAmountOz: 1.5, defaultAmountMl: 30,  defaultPercentage: 40, color: '#BF5AF2' },
+  { label: 'Vodka',    defaultAmountOz: 1.5, defaultAmountMl: 30,  defaultPercentage: 40, color: '#64D2FF' },
+  { label: 'Wine',     defaultAmountOz: 5,   defaultAmountMl: 150, defaultPercentage: 12.5, color: '#FF375F' },
+  { label: 'Cocktail', defaultAmountOz: 6,   defaultAmountMl: 150, defaultPercentage: 15, color: '#5E5CE6' },
+  { label: 'Other',    defaultAmountOz: 4,   defaultAmountMl: 100, defaultPercentage: 10, color: '#8e8e93' },
 ];
 
 const OZ_TO_ML = 29.5735;
@@ -47,37 +48,34 @@ export default function AddEntry() {
   const [drinkLibrary, setDrinkLibrary] = useState<DrinkLibraryItem[]>([]);
   const [selectedLibraryDrink, setSelectedLibraryDrink] = useState<string>('');
 
-  const handleTypeChange = (newType: string) => {
-    setType(newType);
-    const drinkType = DRINK_TYPES.find((dt) => dt.label === newType);
-    if (drinkType) {
+  const currentColor = DRINK_TYPES.find((d) => d.label === type)?.color || '#8e8e93';
+
+  const handleTypeChange = (v: string) => {
+    setType(v);
+    const dt = DRINK_TYPES.find((d) => d.label === v);
+    if (dt) {
       setUseOz(false);
-      setAmountMl(drinkType.defaultAmountMl);
-      setAmountOz(drinkType.defaultAmountOz);
-      if (useDefaultABV) setAlcoholPercentage(drinkType.defaultPercentage);
+      setAmountMl(dt.defaultAmountMl); setAmountOz(dt.defaultAmountOz);
+      if (useDefaultABV) setAlcoholPercentage(dt.defaultPercentage);
     }
   };
 
   const handleUseDefaultABVToggle = () => {
-    const newValue = !useDefaultABV;
-    setUseDefaultABV(newValue);
-    if (newValue) {
-      const drinkType = DRINK_TYPES.find((dt) => dt.label === type);
-      if (drinkType) setAlcoholPercentage(drinkType.defaultPercentage);
+    const newVal = !useDefaultABV;
+    setUseDefaultABV(newVal);
+    if (newVal) {
+      const dt = DRINK_TYPES.find((d) => d.label === type);
+      if (dt) setAlcoholPercentage(dt.defaultPercentage);
     }
   };
 
-  const handleAmountChange = (value: number, isOz: boolean) => {
-    if (isOz) { setAmountOz(value); setAmountMl(value * OZ_TO_ML); }
-    else       { setAmountMl(value); setAmountOz(value / OZ_TO_ML); }
+  const handleAmountChange = (v: number, isOz: boolean) => {
+    if (isOz) { setAmountOz(v); setAmountMl(v * OZ_TO_ML); }
+    else       { setAmountMl(v); setAmountOz(v / OZ_TO_ML); }
   };
 
   useEffect(() => {
-    if (user) {
-      loadSessions();
-      loadDrinkLibrary();
-      checkAutoSession();
-    }
+    if (user) { loadSessions(); loadDrinkLibrary(); checkAutoSession(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [logTime, customTime, user]);
 
@@ -85,409 +83,323 @@ export default function AddEntry() {
     if (!user) return;
     if (DEMO_MODE) { setDrinkLibrary(DEMO_LIBRARY); return; }
     try {
-      const drinksQuery = query(
-        collection(db, 'drinkLibrary'),
-        where('userId', '==', user.uid),
-        orderBy('timesUsed', 'desc')
-      );
-      const snapshot = await getDocs(drinksQuery);
-      const loadedDrinks: DrinkLibraryItem[] = [];
-      snapshot.forEach((docSnapshot) => {
-        const data = docSnapshot.data();
-        loadedDrinks.push({
-          id: docSnapshot.id, ...data,
-          createdAt: data.createdAt.toDate(),
-          lastUsed: data.lastUsed?.toDate(),
-        } as DrinkLibraryItem);
-      });
-      setDrinkLibrary(loadedDrinks);
-    } catch (error) {
-      console.error('Error loading drink library:', error);
-    }
+      const snap = await getDocs(query(collection(db, 'drinkLibrary'), where('userId', '==', user.uid), orderBy('timesUsed', 'desc')));
+      const loaded: DrinkLibraryItem[] = [];
+      snap.forEach((d) => { const data = d.data(); loaded.push({ id: d.id, ...data, createdAt: data.createdAt.toDate(), lastUsed: data.lastUsed?.toDate() } as DrinkLibraryItem); });
+      setDrinkLibrary(loaded);
+    } catch (e) { console.error(e); }
   };
 
-  const handleLibraryDrinkSelect = (drinkId: string) => {
-    const drink = drinkLibrary.find(d => d.id === drinkId);
-    if (drink) {
-      setSelectedLibraryDrink(drinkId);
-      setType(drink.category || 'Other');
-      setAlcoholPercentage(drink.abv);
-      setUseDefaultABV(false);
-      if (drink.typicalServingSizeMl) {
-        setUseOz(false);
-        setAmountMl(drink.typicalServingSizeMl);
-        setAmountOz(drink.typicalServingSizeMl / OZ_TO_ML);
-      } else if (drink.typicalServingSizeOz) {
-        setUseOz(false);
-        setAmountMl(drink.typicalServingSizeOz * OZ_TO_ML);
-        setAmountOz(drink.typicalServingSizeOz);
-      }
-    }
+  const handleLibraryDrinkSelect = (id: string) => {
+    const d = drinkLibrary.find((x) => x.id === id);
+    if (!d) return;
+    setSelectedLibraryDrink(id);
+    setType(d.category || 'Other');
+    setAlcoholPercentage(d.abv);
+    setUseDefaultABV(false);
+    if (d.typicalServingSizeMl) { setUseOz(false); setAmountMl(d.typicalServingSizeMl); setAmountOz(d.typicalServingSizeMl / OZ_TO_ML); }
+    else if (d.typicalServingSizeOz) { setUseOz(false); setAmountMl(d.typicalServingSizeOz * OZ_TO_ML); setAmountOz(d.typicalServingSizeOz); }
   };
 
   const loadSessions = async () => {
     if (!user) return;
     if (DEMO_MODE) { setSessions(DEMO_SESSIONS); return; }
     try {
-      const sessionsQuery = query(
-        collection(db, 'sessions'),
-        where('userId', '==', user.uid),
-        orderBy('startTime', 'desc')
-      );
-      const snapshot = await getDocs(sessionsQuery);
-      const loadedSessions: Session[] = [];
-      snapshot.forEach((docSnapshot) => {
-        const data = docSnapshot.data();
-        loadedSessions.push({
-          id: docSnapshot.id, ...data,
-          startTime: data.startTime.toDate(),
-          endTime: data.endTime?.toDate(),
-          createdAt: data.createdAt.toDate(),
-        } as Session);
-      });
-      const activeSessions = loadedSessions.filter(s => !s.endTime || differenceInMinutes(new Date(), s.endTime) < AUTO_SESSION_THRESHOLD_MINUTES);
-      setSessions(activeSessions.slice(0, 10));
-    } catch (error) {
-      console.error('Error loading sessions:', error);
-    }
+      const snap = await getDocs(query(collection(db, 'sessions'), where('userId', '==', user.uid), orderBy('startTime', 'desc')));
+      const loaded: Session[] = [];
+      snap.forEach((d) => { const data = d.data(); loaded.push({ id: d.id, ...data, startTime: data.startTime.toDate(), endTime: data.endTime?.toDate(), createdAt: data.createdAt.toDate() } as Session); });
+      setSessions(loaded.filter((s) => !s.endTime || differenceInMinutes(new Date(), s.endTime) < AUTO_SESSION_THRESHOLD_MINUTES).slice(0, 10));
+    } catch (e) { console.error(e); }
   };
 
   const checkAutoSession = async () => {
     if (!user) return;
     if (DEMO_MODE) return;
     try {
+      const snap = await getDocs(query(collection(db, 'entries'), where('userId', '==', user.uid), orderBy('date', 'desc')));
+      let found = false;
       const entryTime = customTime ? logTime : new Date();
-      const recentQuery = query(
-        collection(db, 'entries'),
-        where('userId', '==', user.uid),
-        orderBy('date', 'desc')
-      );
-      const snapshot = await getDocs(recentQuery);
-      let foundSession = false;
-      snapshot.forEach((docSnapshot) => {
-        if (foundSession) return;
-        const data = docSnapshot.data();
-        const entryDate = data.date.toDate();
-        const minutesDiff = Math.abs(differenceInMinutes(entryTime, entryDate));
-        if (minutesDiff <= AUTO_SESSION_THRESHOLD_MINUTES && data.sessionId) {
+      snap.forEach((d) => {
+        if (found) return;
+        const data = d.data();
+        const minutes = Math.abs(differenceInMinutes(entryTime, data.date.toDate()));
+        if (minutes <= AUTO_SESSION_THRESHOLD_MINUTES && data.sessionId) {
           setSelectedSessionId(data.sessionId);
-          foundSession = true;
+          found = true;
           setAutoSuggestSession(true);
         }
       });
-      if (!foundSession) setAutoSuggestSession(false);
-    } catch (error) {
-      console.error('Error checking auto-session:', error);
-    }
+      if (!found) setAutoSuggestSession(false);
+    } catch (e) { console.error(e); }
   };
 
   const handleResetToDefaults = () => {
-    const drinkType = DRINK_TYPES.find((dt) => dt.label === type);
-    if (drinkType) {
-      setUseOz(false);
-      setAmountMl(drinkType.defaultAmountMl);
-      setAmountOz(drinkType.defaultAmountOz);
-      setAlcoholPercentage(drinkType.defaultPercentage);
-      setUseDefaultABV(true);
-      setCustomTime(false);
-      setLogTime(new Date());
-      setSelectedSessionId('');
-      setAutoSuggestSession(false);
-      setNewSessionName('');
-      setSelectedLibraryDrink('');
-    }
+    const dt = DRINK_TYPES.find((d) => d.label === type);
+    if (!dt) return;
+    setUseOz(false); setAmountMl(dt.defaultAmountMl); setAmountOz(dt.defaultAmountOz);
+    setAlcoholPercentage(dt.defaultPercentage); setUseDefaultABV(true);
+    setCustomTime(false); setLogTime(new Date());
+    setSelectedSessionId(''); setAutoSuggestSession(false); setNewSessionName(''); setSelectedLibraryDrink('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    if (DEMO_MODE) {
-      alert('Demo mode: writes are disabled. In the real app, this would save your entry.');
-      setSubmitting(false);
-      navigate('/');
-      return;
-    }
+    if (DEMO_MODE) { alert('Demo mode: writes disabled.'); setSubmitting(false); navigate('/'); return; }
     try {
-      const trimmedNotes = notes.trim();
-      const dateToUse = customTime ? logTime : new Date();
-      if (!user) { alert('You must be signed in to add an entry.'); return; }
-
-      const entryData: any = {
-        userId: user.uid,
-        type,
-        amount: amountMl,
-        alcoholPercentage,
-        date: Timestamp.fromDate(dateToUse),
-      };
-      if (trimmedNotes) entryData.notes = trimmedNotes;
+      const trimNotes = notes.trim();
+      const date = customTime ? logTime : new Date();
+      if (!user) { alert('Sign in first.'); return; }
+      const entryData: any = { userId: user.uid, type, amount: amountMl, alcoholPercentage, date: Timestamp.fromDate(date) };
+      if (trimNotes) entryData.notes = trimNotes;
 
       let entryId: string;
       if (selectedSessionId) {
         entryData.sessionId = selectedSessionId;
-        const entryRef = await addDoc(collection(db, 'entries'), entryData);
-        entryId = entryRef.id;
-        const session = sessions.find(s => s.id === selectedSessionId);
-        if (session) {
-          await updateDoc(doc(db, 'sessions', selectedSessionId), {
-            entryIds: [...session.entryIds, entryId],
-            endTime: Timestamp.fromDate(dateToUse),
-          });
-        }
+        const ref = await addDoc(collection(db, 'entries'), entryData);
+        entryId = ref.id;
+        const s = sessions.find((x) => x.id === selectedSessionId);
+        if (s) await updateDoc(doc(db, 'sessions', selectedSessionId), { entryIds: [...s.entryIds, entryId], endTime: Timestamp.fromDate(date) });
       } else if (newSessionName.trim()) {
-        const entryRef = await addDoc(collection(db, 'entries'), entryData);
-        entryId = entryRef.id;
-        const sessionRef = await addDoc(collection(db, 'sessions'), {
-          userId: user.uid,
-          name: newSessionName.trim(),
-          startTime: Timestamp.fromDate(dateToUse),
-          endTime: Timestamp.fromDate(dateToUse),
-          entryIds: [entryId],
-          createdAt: Timestamp.fromDate(new Date()),
+        const ref = await addDoc(collection(db, 'entries'), entryData);
+        entryId = ref.id;
+        const sRef = await addDoc(collection(db, 'sessions'), {
+          userId: user.uid, name: newSessionName.trim(),
+          startTime: Timestamp.fromDate(date), endTime: Timestamp.fromDate(date),
+          entryIds: [entryId], createdAt: Timestamp.fromDate(new Date()),
         });
-        await updateDoc(doc(db, 'entries', entryId), { sessionId: sessionRef.id });
+        await updateDoc(doc(db, 'entries', entryId), { sessionId: sRef.id });
       } else {
         await addDoc(collection(db, 'entries'), entryData);
       }
-
       if (selectedLibraryDrink) {
         try {
-          const currentDrink = drinkLibrary.find(d => d.id === selectedLibraryDrink);
-          await updateDoc(doc(db, 'drinkLibrary', selectedLibraryDrink), {
-            timesUsed: (currentDrink?.timesUsed || 0) + 1,
-            lastUsed: Timestamp.fromDate(dateToUse),
-          });
-        } catch (error) {
-          console.warn('Failed to update drink library usage:', error);
-        }
+          const cur = drinkLibrary.find((x) => x.id === selectedLibraryDrink);
+          await updateDoc(doc(db, 'drinkLibrary', selectedLibraryDrink), { timesUsed: (cur?.timesUsed || 0) + 1, lastUsed: Timestamp.fromDate(date) });
+        } catch {}
       }
-
-      const defaultDrink = DRINK_TYPES[0];
-      setType(defaultDrink.label);
-      setUseOz(false);
-      setAmountMl(defaultDrink.defaultAmountMl);
-      setAmountOz(defaultDrink.defaultAmountOz);
-      setAlcoholPercentage(defaultDrink.defaultPercentage);
-      setUseDefaultABV(true);
-      setCustomTime(false);
-      setLogTime(new Date());
-      setNotes('');
-      setSelectedSessionId('');
-      setAutoSuggestSession(false);
-      setNewSessionName('');
-      setSelectedLibraryDrink('');
-      await loadDrinkLibrary();
       navigate('/');
-    } catch (error: any) {
-      console.error('Error adding entry:', error);
-      const errorMessage = error?.message || error?.code || 'Unknown error occurred';
-      alert(`Failed to add entry: ${errorMessage}`);
-    } finally {
-      setSubmitting(false);
-    }
+    } catch (e: any) { console.error(e); alert(`Failed: ${e?.message}`); } finally { setSubmitting(false); }
   };
 
   const alcoholMl = (amountMl * alcoholPercentage) / 100;
   const stdDrinks = alcoholMl / STANDARD_DRINK_ALCOHOL_ML;
 
   return (
-    <Page>
-      <PageHeader
-        eyebrow="Log"
-        title="New entry"
-        description="Pick a drink, set the amount, save. Under a second if you use a library preset."
-      />
+    <div>
+      <div className="sticky top-0 z-10 bg-bg2/85 backdrop-blur border-b border-separator px-6 lg:px-8 py-4 flex items-center justify-between rise">
+        <div>
+          <div className="text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">New</div>
+          <h1 className="text-2xl font-bold text-ink tracking-[-0.02em]">Add drink</h1>
+        </div>
+        <Button onClick={() => navigate('/')} className="!bg-card2 !border-separator">Cancel</Button>
+      </div>
 
-      <PageBody>
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-        {/* Left: form */}
-        <Card>
-          {drinkLibrary.length > 0 && (
-            <Section title="From library" description="Quick-pick your saved drinks" className="mb-6">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                {drinkLibrary.slice(0, 8).map((drink) => (
-                  <button
-                    key={drink.id}
-                    type="button"
-                    onClick={() => drink.id && handleLibraryDrinkSelect(drink.id)}
-                    className={cx(
-                      'h-9 px-2.5 rounded-md text-xs font-medium transition-colors border',
-                      selectedLibraryDrink === drink.id
-                        ? 'bg-ink text-paper border-ink'
-                        : 'bg-paper2 text-ink border-rule hover:bg-paper3 hover:border-rule2',
-                    )}
-                    title={`${drink.abv}% ABV · ${drink.typicalServingSizeMl ? `${Math.round(drink.typicalServingSizeMl)} ml` : ''}`}
-                  >
-                    <span className="truncate block">{drink.name}</span>
-                  </button>
-                ))}
-              </div>
-              <p className="mt-2 text-2xs text-ink3">
-                <Link to="/library" className="hover:text-ink inline-flex items-center gap-1">Manage library <IconArrowRight width={10} height={10} /></Link>
-              </p>
-            </Section>
-          )}
-
-          <Section title="Drink" className="mb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Type">
-                <Select value={type} onChange={(e) => handleTypeChange(e.target.value)}>
-                  {DRINK_TYPES.map((dt) => <option key={dt.label} value={dt.label}>{dt.label}</option>)}
-                </Select>
-              </Field>
-
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-medium text-ink2">Volume</span>
-                  <div className="inline-flex border border-rule rounded-md overflow-hidden">
-                    <button type="button" onClick={() => setUseOz(false)}
-                      className={cx('h-6 px-2 text-2xs font-medium transition-colors', !useOz ? 'bg-paper3 text-ink' : 'text-ink3 hover:text-ink')}>ml</button>
-                    <button type="button" onClick={() => setUseOz(true)}
-                      className={cx('h-6 px-2 text-2xs font-medium transition-colors border-l border-rule', useOz ? 'bg-paper3 text-ink' : 'text-ink3 hover:text-ink')}>oz</button>
+      <PageBody className="!px-6 lg:!px-8 !py-6">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5">
+          <div className="space-y-5">
+            {/* Library quick select */}
+            {drinkLibrary.length > 0 && (
+              <div className="bg-card rounded-3xl p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-[var(--orange)22] text-orange"><IconGlass width={13} height={13} /></span>
+                    <span className="text-md font-semibold text-ink">From library</span>
                   </div>
+                  <Link to="/library" className="text-xs text-blue hover:brightness-110">Manage →</Link>
                 </div>
-                <Input
-                  type="number"
-                  value={useOz ? Number(amountOz.toFixed(1)) : Math.round(amountMl)}
-                  onChange={(e) => handleAmountChange(parseFloat(e.target.value) || 0, useOz)}
-                  min={0}
-                  step={useOz ? 0.1 : 1}
-                  required
-                  placeholder={useOz ? '12, 5, 1.5' : '650, 150, 30'}
-                />
-                <p className="mt-1.5 text-2xs text-ink3 font-mono tabular">
-                  {useOz ? `${amountOz.toFixed(1)} oz = ${Math.round(amountMl)} ml` : `${Math.round(amountMl)} ml = ${amountOz.toFixed(1)} oz`}
-                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {drinkLibrary.slice(0, 8).map((d) => {
+                    const c = DRINK_TYPES.find((dt) => dt.label === (d.category || 'Other'))?.color || '#8e8e93';
+                    const selected = selectedLibraryDrink === d.id;
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => d.id && handleLibraryDrinkSelect(d.id)}
+                        className={cx('rounded-2xl p-3 text-left transition-all border',
+                          selected ? 'bg-card2 border-transparent ring-2' : 'bg-card2 border-separator hover:border-separator2')}
+                        style={selected ? { boxShadow: `inset 0 0 0 2px ${c}` } : undefined}
+                      >
+                        <div className="text-sm font-semibold text-ink truncate">{d.name}</div>
+                        <div className="text-2xs text-ink3 font-mono tabular mt-0.5" style={{ color: c }}>{d.abv}% · {Math.round(d.typicalServingSizeMl || 0)} ml</div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+            )}
+
+            {/* Drink type */}
+            <div className="bg-card rounded-3xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl" style={{ background: `${currentColor}22`, color: currentColor }}><IconGlass width={13} height={13} /></span>
+                <span className="text-md font-semibold text-ink">Drink</span>
+              </div>
+
+              <div className="grid grid-cols-3 sm:grid-cols-7 gap-2 mb-5">
+                {DRINK_TYPES.map((dt) => {
+                  const active = dt.label === type;
+                  return (
+                    <button
+                      key={dt.label}
+                      type="button"
+                      onClick={() => handleTypeChange(dt.label)}
+                      className={cx('rounded-2xl p-2.5 text-center transition-colors border',
+                        active ? 'text-white border-transparent' : 'bg-card2 text-ink2 border-separator hover:bg-bg3')}
+                      style={active ? { background: dt.color } : undefined}
+                    >
+                      <div className="text-xs font-semibold">{dt.label}</div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-ink2">Volume</span>
+                    <div className="inline-flex bg-card2 rounded-full p-0.5">
+                      <button type="button" onClick={() => setUseOz(false)} className={cx('h-6 px-2.5 text-2xs font-semibold rounded-full transition-colors', !useOz ? 'bg-card text-ink' : 'text-ink3')}>ml</button>
+                      <button type="button" onClick={() => setUseOz(true)}  className={cx('h-6 px-2.5 text-2xs font-semibold rounded-full transition-colors',  useOz ? 'bg-card text-ink' : 'text-ink3')}>oz</button>
+                    </div>
+                  </div>
+                  <Input type="number" required min={0} step={useOz ? 0.1 : 1}
+                    value={useOz ? Number(amountOz.toFixed(1)) : Math.round(amountMl)}
+                    onChange={(e) => handleAmountChange(parseFloat(e.target.value) || 0, useOz)}
+                    className="!bg-card2 !border-separator !h-12 !text-lg" />
+                  <p className="mt-1.5 text-2xs text-ink3 font-mono tabular">
+                    {useOz ? `${amountOz.toFixed(1)} oz = ${Math.round(amountMl)} ml` : `${Math.round(amountMl)} ml = ${amountOz.toFixed(1)} oz`}
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-ink2">ABV (%)</span>
+                    <label className="inline-flex items-center gap-2 cursor-pointer text-2xs text-ink3">
+                      <input type="checkbox" checked={useDefaultABV} onChange={handleUseDefaultABVToggle} className="rounded" />
+                      <span>Default</span>
+                    </label>
+                  </div>
+                  <Input type="number" required min={0} max={100} step={0.1}
+                    value={alcoholPercentage}
+                    onChange={(e) => { setAlcoholPercentage(parseFloat(e.target.value) || 0); setUseDefaultABV(false); }}
+                    disabled={useDefaultABV}
+                    className={cx('!bg-card2 !border-separator !h-12 !text-lg', useDefaultABV && '!opacity-60')} />
+                </div>
+              </div>
+
+              <button type="button" onClick={handleResetToDefaults} className="mt-4 inline-flex items-center gap-1.5 text-xs text-ink3 hover:text-ink transition-colors">
+                <IconRefresh width={12} height={12} /> Reset to {type} defaults
+              </button>
             </div>
 
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-medium text-ink2">ABV (%)</span>
-                <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={useDefaultABV} onChange={handleUseDefaultABVToggle}
-                    className="rounded border-rule2 text-ink focus:ring-0 focus:ring-offset-0" />
-                  <span className="text-2xs text-ink3">Use category default</span>
+            {/* When */}
+            <div className="bg-card rounded-3xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-[var(--cyan)22] text-cyan"><IconClock width={13} height={13} /></span>
+                <span className="text-md font-semibold text-ink">When</span>
+                <label className="ml-auto inline-flex items-center gap-2 cursor-pointer text-2xs text-ink3">
+                  <input type="checkbox" checked={customTime} onChange={(e) => setCustomTime(e.target.checked)} className="rounded" />
+                  <span>Custom time</span>
                 </label>
               </div>
-              <Input
-                type="number"
-                value={alcoholPercentage}
-                onChange={(e) => { setAlcoholPercentage(parseFloat(e.target.value) || 0); setUseDefaultABV(false); }}
-                disabled={useDefaultABV}
-                min={0} max={100} step={0.1} required
-                className={cx(useDefaultABV && 'opacity-60 cursor-not-allowed')}
-              />
+              {customTime ? (
+                <Input type="datetime-local"
+                  value={(() => {
+                    const l = new Date(logTime.getTime() - logTime.getTimezoneOffset() * 60000);
+                    return l.toISOString().slice(0, 16);
+                  })()}
+                  onChange={(e) => setLogTime(new Date(e.target.value))}
+                  className="!bg-card2 !border-separator !h-12" />
+              ) : (
+                <div className="h-12 flex items-center px-4 rounded-2xl bg-card2 text-md text-ink font-mono tabular">
+                  {format(new Date(), 'dd MMM, HH:mm')} · <span className="text-ink3 ml-1.5">now</span>
+                </div>
+              )}
             </div>
 
-            <button
-              type="button"
-              onClick={handleResetToDefaults}
-              className="mt-3 inline-flex items-center gap-1.5 text-xs text-ink3 hover:text-ink transition-colors"
-            >
-              <IconRefresh width={12} height={12} /> Reset to {type} defaults
-            </button>
-          </Section>
-
-          <Section title="When" className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-ink3">Logged time</span>
-              <label className="inline-flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={customTime} onChange={(e) => setCustomTime(e.target.checked)}
-                  className="rounded border-rule2 text-ink focus:ring-0 focus:ring-offset-0" />
-                <span className="text-2xs text-ink3">Custom time</span>
-              </label>
+            {/* Session */}
+            <div className="bg-card rounded-3xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-[var(--purple)22] text-purple"><IconClock width={13} height={13} /></span>
+                <span className="text-md font-semibold text-ink">Session</span>
+                <span className="text-2xs text-ink3 ml-auto">Optional</span>
+              </div>
+              {autoSuggestSession && selectedSessionId && (
+                <div className="mb-3 px-3 py-2.5 rounded-2xl bg-[var(--purple)18] text-2xs text-purple">
+                  Auto-suggested: matching a recent entry.
+                </div>
+              )}
+              <Select value={selectedSessionId} onChange={(e) => { setSelectedSessionId(e.target.value); setNewSessionName(''); }}
+                className="!bg-card2 !border-separator !h-12">
+                <option value="">No session</option>
+                {sessions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </Select>
+              <div className="my-2 text-center text-2xs text-ink3 uppercase tracking-[0.08em] font-semibold">or</div>
+              <Input type="text" value={newSessionName}
+                onChange={(e) => { setNewSessionName(e.target.value); setSelectedSessionId(''); }}
+                placeholder="Name a new session"
+                className="!bg-card2 !border-separator !h-12" />
             </div>
-            {customTime ? (
-              <Input
-                type="datetime-local"
-                value={(() => {
-                  const localDate = new Date(logTime.getTime() - logTime.getTimezoneOffset() * 60000);
-                  return localDate.toISOString().slice(0, 16);
-                })()}
-                onChange={(e) => setLogTime(new Date(e.target.value))}
-              />
-            ) : (
-              <div className="h-10 flex items-center px-3 rounded-md border border-rule bg-paper text-sm text-ink2 font-mono tabular">
-                {format(new Date(), 'dd/MM/yyyy HH:mm')} · now
-              </div>
-            )}
-          </Section>
 
-          <Section title="Session (optional)" description="Group with an existing session or start a new one" className="mb-6">
-            {autoSuggestSession && selectedSessionId && (
-              <div className="mb-3 px-3 py-2 rounded-md bg-paper3 border border-rule text-xs text-ink2">
-                Auto-suggested: matching a recent entry within {AUTO_SESSION_THRESHOLD_MINUTES} minutes.
-              </div>
-            )}
-            <Select
-              value={selectedSessionId}
-              onChange={(e) => { setSelectedSessionId(e.target.value); setNewSessionName(''); }}
-            >
-              <option value="">No session</option>
-              {sessions.map((session) => (
-                <option key={session.id} value={session.id}>
-                  {session.name} {session.endTime ? '(completed)' : '(active)'}
-                </option>
-              ))}
-            </Select>
-            <div className="my-2 text-2xs text-ink3 uppercase tracking-[0.06em]">or</div>
-            <Input
-              type="text"
-              value={newSessionName}
-              onChange={(e) => { setNewSessionName(e.target.value); setSelectedSessionId(''); }}
-              placeholder="Name a new session"
-            />
-          </Section>
-
-          <Section title="Notes (optional)" className="mb-2">
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Anything worth remembering" />
-          </Section>
-
-          <div className="flex gap-2 justify-end mt-6 pt-4 border-t border-rule">
-            <Button type="button" onClick={() => navigate('/')}>Cancel</Button>
-            <Button type="submit" variant="primary" disabled={submitting}>
-              {submitting ? 'Saving…' : 'Save entry'}
-            </Button>
+            {/* Notes */}
+            <div className="bg-card rounded-3xl p-5">
+              <Field label="Notes (optional)">
+                <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Anything worth remembering" className="!bg-card2 !border-separator" />
+              </Field>
+            </div>
           </div>
-        </Card>
 
-        {/* Right: live summary */}
-        <div className="space-y-4">
-          <Card>
-            <h3 className="text-xs font-medium text-ink3 uppercase tracking-[0.06em] mb-4">This entry</h3>
-            <dl className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-ink3">Type</dt>
-                <dd className="text-ink">{type}</dd>
+          {/* Right: live summary */}
+          <div className="space-y-4">
+            <div className="rounded-3xl p-6" style={{ background: `linear-gradient(160deg, ${currentColor}22 0%, var(--card) 65%)` }}>
+              <div className="text-2xs uppercase tracking-[0.08em] font-semibold text-ink3 mb-3">This entry</div>
+              <div className="text-5xl font-bold tabular tracking-[-0.03em]" style={{ color: currentColor }}>
+                {stdDrinks.toFixed(2)}
               </div>
-              <div className="flex justify-between">
-                <dt className="text-ink3">Volume</dt>
-                <dd className="text-ink font-mono tabular">{Math.round(amountMl)} ml</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-ink3">ABV</dt>
-                <dd className="text-ink font-mono tabular">{alcoholPercentage.toFixed(1)}%</dd>
-              </div>
-              <div className="flex justify-between border-t border-rule pt-2 mt-2">
-                <dt className="text-ink3">Pure alcohol</dt>
-                <dd className="text-ink font-mono tabular">{alcoholMl.toFixed(1)} ml</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-ink3">Standard drinks</dt>
-                <dd className="text-ink font-mono tabular">{stdDrinks.toFixed(2)}</dd>
-              </div>
-            </dl>
-          </Card>
+              <div className="text-md text-ink3 font-medium mt-1">standard drinks</div>
 
-          {selectedLibraryDrink && (
-            <div className="text-xs text-ink3 flex items-center gap-2 px-1">
-              <Badge tone="accent">From library</Badge>
-              <span>Form auto-filled from your presets.</span>
+              <div className="mt-5 pt-4 border-t border-separator space-y-2.5">
+                <SummaryRow label="Type" value={type} />
+                <SummaryRow label="Volume" value={`${Math.round(amountMl)} ml`} />
+                <SummaryRow label="ABV" value={`${alcoholPercentage.toFixed(1)}%`} />
+                <SummaryRow label="Pure alcohol" value={`${alcoholMl.toFixed(1)} ml`} strong color={currentColor} />
+              </div>
             </div>
-          )}
-        </div>
-      </form>
+
+            <Button type="submit" variant="primary" disabled={submitting} className="w-full !h-12 !text-md bg-pink text-white border-pink hover:brightness-110">
+              {submitting ? 'Saving…' : 'Save drink'}
+            </Button>
+
+            <div className="grid grid-cols-3 gap-2">
+              <MiniStat icon={<IconChart width={12} height={12} />} label="Progress" value="→ Summary" to="/" />
+              <MiniStat icon={<IconTarget width={12} height={12} />} label="Goals" value="→ Set" to="/goals" />
+              <MiniStat icon={<IconGlass width={12} height={12} />} label="Library" value="→ Manage" to="/library" />
+            </div>
+          </div>
+        </form>
       </PageBody>
-    </Page>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value, strong, color }: { label: string; value: string; strong?: boolean; color?: string }) {
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-ink3">{label}</span>
+      <span className={cx('font-mono tabular', strong ? 'font-bold' : 'text-ink')} style={color && strong ? { color } : undefined}>{value}</span>
+    </div>
+  );
+}
+
+function MiniStat({ icon, label, value, to }: { icon: React.ReactNode; label: string; value: string; to: string }) {
+  return (
+    <Link to={to} className="bg-card rounded-2xl p-3 hover:bg-card2 transition-colors block">
+      <div className="inline-flex items-center gap-1.5 text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">
+        {icon} {label}
+      </div>
+      <div className="text-xs text-ink font-medium mt-1">{value}</div>
+    </Link>
   );
 }
