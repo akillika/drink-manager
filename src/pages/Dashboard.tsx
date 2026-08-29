@@ -266,13 +266,13 @@ export default function Dashboard() {
               </div>
               <Link to="/goals" className="text-sm text-blue hover:brightness-110">Edit goals</Link>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-[220px_1fr] gap-8 items-center">
+            <div className="grid grid-cols-1 sm:grid-cols-[260px_1fr] gap-8 items-center">
               <div className="justify-self-center relative">
-                <ActivityRings rings={rings} size={220} />
+                <ActivityRings rings={rings} size={260} />
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <div className="text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">This week</div>
-                  <div className="text-3xl font-bold text-ink tabular tracking-[-0.02em]">{weeklyConsumption.toFixed(1)}</div>
-                  <div className="text-xs text-ink3">of {wGoal} std</div>
+                  <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-ink3 mb-1">This week</div>
+                  <div className="text-[40px] leading-none font-bold text-ink tabular tracking-[-0.03em]">{weeklyConsumption.toFixed(1)}</div>
+                  <div className="text-2xs text-ink3 mt-1.5 font-mono tabular">of {wGoal} std</div>
                 </div>
               </div>
               <div className="grid gap-3">
@@ -540,8 +540,8 @@ export default function Dashboard() {
 // ---- Activity rings ------------------------------------------------
 function ActivityRings({ rings, size }: { rings: { color: string; value: number; target: number }[]; size: number }) {
   const center = size / 2;
-  const strokes = [16, 16, 16];
-  const gaps = [8, 8];
+  const strokes = [18, 18, 18];
+  const gaps = [6, 6];
   let radius = center - strokes[0] / 2 - 2;
   return (
     <svg width={size} height={size} className="-rotate-90">
@@ -572,11 +572,12 @@ function GoalCard({ label, limit, value, color, icon }: {
   const pct = limit > 0 ? Math.round((value / limit) * 100) : 0;
   const over = value > limit;
   const remaining = Math.max(0, limit - value);
+  const effectiveColor = over ? '#FF453A' : color;
   return (
-    <div className="rounded-3xl p-6 border border-separator" style={{ background: `linear-gradient(160deg, ${color}18 0%, var(--card) 65%)` }}>
+    <div className="rounded-3xl p-6 border border-separator" style={{ background: `linear-gradient(160deg, ${effectiveColor}18 0%, var(--card) 65%)` }}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl" style={{ background: `${color}30`, color }}>
+          <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl" style={{ background: `${effectiveColor}30`, color: effectiveColor }}>
             {icon}
           </span>
           <div>
@@ -584,12 +585,12 @@ function GoalCard({ label, limit, value, color, icon }: {
             <div className="text-md font-semibold text-ink">Goal</div>
           </div>
         </div>
-        <div className={cx('text-2xs uppercase tracking-[0.08em] font-bold px-2.5 py-1 rounded-full')} style={{ background: over ? '#FF453A22' : `${color}22`, color: over ? '#FF453A' : color }}>
+        <div className="text-2xs uppercase tracking-[0.08em] font-bold px-2.5 py-1 rounded-full" style={{ background: `${effectiveColor}22`, color: effectiveColor }}>
           {over ? 'Over' : `${pct}%`}
         </div>
       </div>
       <div className="flex items-baseline gap-2 mt-4">
-        <span className="text-5xl font-bold tabular tracking-[-0.03em]" style={{ color }}>{value.toFixed(1)}</span>
+        <span className="text-5xl font-bold tabular tracking-[-0.03em]" style={{ color: effectiveColor }}>{value.toFixed(1)}</span>
         <span className="text-md text-ink3 font-medium">/ {limit} std</span>
       </div>
       <div className="text-sm text-ink3 mt-1">
@@ -597,7 +598,7 @@ function GoalCard({ label, limit, value, color, icon }: {
       </div>
       <div className="h-2.5 mt-5 rounded-full bg-bg3 overflow-hidden">
         <div className="h-full rounded-full transition-[width] duration-700 ease-out"
-          style={{ width: `${Math.min(100, pct)}%`, background: over ? '#FF453A' : color }} />
+          style={{ width: `${Math.min(100, pct)}%`, background: effectiveColor }} />
       </div>
     </div>
   );

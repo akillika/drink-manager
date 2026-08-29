@@ -100,6 +100,25 @@ export const DEMO_ENTRIES: AlcoholEntry[] = [
   { id: nextId(), userId: DEMO_UID, type: 'Rum',    amount: 60,  alcoholPercentage: 40,   date: dayOffset(25, 22, 15) },
   { id: nextId(), userId: DEMO_UID, type: 'Beer',   amount: 330, alcoholPercentage: 5,    date: dayOffset(28, 20, 30) },
   { id: nextId(), userId: DEMO_UID, type: 'Whisky', amount: 60,  alcoholPercentage: 40,   date: dayOffset(30, 21, 45) },
+
+  // Older history (spread through 5 previous months) so the 6-month trend has shape
+  { id: nextId(), userId: DEMO_UID, type: 'Beer',     amount: 650, alcoholPercentage: 5,    date: dayOffset(45, 20, 30) },
+  { id: nextId(), userId: DEMO_UID, type: 'Whisky',   amount: 60,  alcoholPercentage: 40,   date: dayOffset(48, 22, 15) },
+  { id: nextId(), userId: DEMO_UID, type: 'Wine',     amount: 200, alcoholPercentage: 13,   date: dayOffset(52, 20, 45) },
+  { id: nextId(), userId: DEMO_UID, type: 'Beer',     amount: 440, alcoholPercentage: 5,    date: dayOffset(60, 20, 15) },
+  { id: nextId(), userId: DEMO_UID, type: 'Cocktail', amount: 150, alcoholPercentage: 15,   date: dayOffset(64, 21, 30) },
+  { id: nextId(), userId: DEMO_UID, type: 'Beer',     amount: 650, alcoholPercentage: 5,    date: dayOffset(72, 21, 0) },
+  { id: nextId(), userId: DEMO_UID, type: 'Rum',      amount: 60,  alcoholPercentage: 40,   date: dayOffset(78, 22, 30) },
+  { id: nextId(), userId: DEMO_UID, type: 'Beer',     amount: 440, alcoholPercentage: 5,    date: dayOffset(85, 20, 0) },
+  { id: nextId(), userId: DEMO_UID, type: 'Wine',     amount: 150, alcoholPercentage: 12.5, date: dayOffset(95, 20, 30) },
+  { id: nextId(), userId: DEMO_UID, type: 'Whisky',   amount: 30,  alcoholPercentage: 40,   date: dayOffset(102, 22, 45) },
+  { id: nextId(), userId: DEMO_UID, type: 'Beer',     amount: 650, alcoholPercentage: 5,    date: dayOffset(112, 20, 15) },
+  { id: nextId(), userId: DEMO_UID, type: 'Cocktail', amount: 160, alcoholPercentage: 14,   date: dayOffset(120, 21, 30) },
+  { id: nextId(), userId: DEMO_UID, type: 'Beer',     amount: 440, alcoholPercentage: 5,    date: dayOffset(135, 20, 0) },
+  { id: nextId(), userId: DEMO_UID, type: 'Wine',     amount: 200, alcoholPercentage: 13,   date: dayOffset(148, 21, 0) },
+  { id: nextId(), userId: DEMO_UID, type: 'Whisky',   amount: 60,  alcoholPercentage: 43,   date: dayOffset(155, 22, 30) },
+  { id: nextId(), userId: DEMO_UID, type: 'Beer',     amount: 650, alcoholPercentage: 5,    date: dayOffset(165, 20, 15) },
+  { id: nextId(), userId: DEMO_UID, type: 'Beer',     amount: 330, alcoholPercentage: 5,    date: dayOffset(170, 20, 30) },
 ];
 
 // --- goals ----------------------------------------------------------

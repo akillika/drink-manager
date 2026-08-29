@@ -138,7 +138,7 @@ export default function Layout({ children }: LayoutProps) {
               <span className="ml-auto text-2xs opacity-80 font-mono">N</span>
             </Link>
 
-            <nav className="px-2 py-2 grid gap-0.5 flex-1 overflow-y-auto">
+            <nav className="px-2 py-2 flex flex-col gap-0.5 flex-1 overflow-y-auto">
               {NAV.map(({ to, label, Icon, color }) => {
                 const active = isActive(to);
                 return (
@@ -146,7 +146,7 @@ export default function Layout({ children }: LayoutProps) {
                     key={to}
                     to={to}
                     className={cx(
-                      'group inline-flex items-center gap-3 h-11 px-2 rounded-xl text-sm transition-colors',
+                      'group inline-flex items-center gap-3 h-10 px-2 rounded-xl text-sm transition-colors shrink-0',
                       active ? 'bg-card2 text-ink' : 'text-ink2 hover:text-ink hover:bg-card2',
                     )}
                   >
