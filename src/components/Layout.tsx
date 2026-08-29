@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -20,6 +20,7 @@ const LS_THEME = 'dm.theme';
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -35,6 +36,35 @@ export default function Layout({ children }: LayoutProps) {
   }, [theme]);
 
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+
+  // Global keyboard shortcuts.
+  //   N or n → new drink entry (matches the sidebar hint)
+  //   G then D → go to Dashboard, G then H → History, G then L → Library, etc.
+  useEffect(() => {
+    let sequence: 'idle' | 'g' = 'idle';
+    let seqTimer: number | null = null;
+    const isEditable = (t: EventTarget | null) => {
+      if (!(t instanceof HTMLElement)) return false;
+      const tag = t.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable;
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isEditable(e.target)) return;
+      const k = e.key.toLowerCase();
+      if (sequence === 'g') {
+        const map: Record<string, string> = { d: '/', h: '/history', s: '/sessions', l: '/library', o: '/goals', a: '/add' };
+        if (map[k]) { e.preventDefault(); navigate(map[k]); }
+        sequence = 'idle';
+        if (seqTimer) window.clearTimeout(seqTimer);
+        return;
+      }
+      if (k === 'n') { e.preventDefault(); navigate('/add'); return; }
+      if (k === 'g') { sequence = 'g'; if (seqTimer) window.clearTimeout(seqTimer); seqTimer = window.setTimeout(() => (sequence = 'idle'), 700); return; }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('keydown', onKey); if (seqTimer) window.clearTimeout(seqTimer); };
+  }, [navigate]);
 
   const isActive = (path: string) => path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
   const initials = (user?.displayName || user?.email || 'A').split(' ').map((s: string) => s[0]).slice(0, 2).join('').toUpperCase();
@@ -168,33 +198,34 @@ export default function Layout({ children }: LayoutProps) {
             </nav>
 
             {user && (
-              <div className="border-t border-separator px-2 pt-2 pb-2">
-                <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl">
-                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-card2 text-ink text-xs font-semibold shrink-0">
+              <div className="border-t border-separator p-2">
+                <div className="flex items-center gap-2 px-2 py-2 rounded-xl">
+                  <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br text-white text-xs font-bold shrink-0"
+                    style={{ backgroundImage: 'linear-gradient(135deg, var(--pink), var(--purple))' }}>
                     {initials}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="text-xs text-ink font-semibold truncate leading-tight">{user.displayName || user.email}</div>
                     <div className="text-2xs text-ink3 truncate leading-tight">{user.email}</div>
                   </div>
-                </div>
-                <div className="flex items-center gap-1 mt-1">
-                  <button
-                    onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-                    className="flex-1 inline-flex items-center justify-center gap-2 h-9 rounded-xl text-xs text-ink3 hover:text-ink hover:bg-card2 transition-colors"
-                    aria-label="Toggle theme"
-                    title="Toggle theme"
-                  >
-                    {theme === 'dark' ? <IconSun /> : <IconMoon />}
-                  </button>
-                  <button
-                    onClick={() => signOut()}
-                    className="flex-1 inline-flex items-center justify-center gap-2 h-9 rounded-xl text-xs text-ink3 hover:text-ink hover:bg-card2 transition-colors"
-                    aria-label="Sign out"
-                    title="Sign out"
-                  >
-                    <IconLogout />
-                  </button>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-ink3 hover:text-ink hover:bg-card2 transition-colors"
+                      aria-label="Toggle theme"
+                      title="Toggle theme"
+                    >
+                      {theme === 'dark' ? <IconSun /> : <IconMoon />}
+                    </button>
+                    <button
+                      onClick={() => signOut()}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-ink3 hover:text-red hover:bg-[var(--red)18] transition-colors"
+                      aria-label="Sign out"
+                      title="Sign out"
+                    >
+                      <IconLogout />
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

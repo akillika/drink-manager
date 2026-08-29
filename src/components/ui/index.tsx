@@ -115,10 +115,10 @@ const btnSize: Record<BtnSize, string> = {
 };
 
 const btnVariant: Record<BtnVariant, string> = {
-  primary: 'bg-ink text-paper hover:bg-ink2',
-  secondary: 'bg-paper2 text-ink border border-rule hover:bg-paper3 hover:border-rule2',
-  ghost: 'text-ink2 hover:text-ink hover:bg-paper3',
-  danger: 'text-danger hover:bg-paper3',
+  primary: 'bg-pink text-white border border-pink hover:brightness-110 active:brightness-95',
+  secondary: 'bg-card2 text-ink border border-separator hover:bg-bg3 hover:border-separator2',
+  ghost: 'text-ink2 hover:text-ink hover:bg-card2',
+  danger: 'text-red hover:bg-[var(--red)18]',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: BtnVariant; size?: BtnSize }>(
