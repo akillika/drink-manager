@@ -242,36 +242,41 @@ export default function Dashboard() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-bg2/85 backdrop-blur border-b border-separator px-6 lg:px-8 py-4 flex items-center justify-between rise">
+      {/* Header - tighter on mobile */}
+      <div className="sticky top-12 md:top-0 z-10 bg-bg/95 md:bg-bg2/85 backdrop-blur border-b border-separator px-4 md:px-8 py-3 md:py-4 flex items-center justify-between rise">
         <div>
-          <div className="text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">{format(now, 'EEEE, dd MMMM')}</div>
-          <h1 className="text-2xl font-bold text-ink tracking-[-0.02em]">{greeting}, {user?.displayName?.split(' ')[0] || 'friend'}</h1>
+          <div className="text-[10px] md:text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">{format(now, 'EEE, dd MMM')}</div>
+          <h1 className="text-lg md:text-2xl font-bold text-ink tracking-[-0.02em]">{greeting}<span className="hidden md:inline">, {user?.displayName?.split(' ')[0] || 'friend'}</span></h1>
         </div>
-        <Link to="/add">
-          <Button variant="primary" className="bg-pink text-white border-pink hover:brightness-110">
+        <Link to="/add" className="hidden md:block">
+          <Button variant="primary">
             <IconPlus /> Add drink
           </Button>
         </Link>
       </div>
 
-      <PageBody className="!px-6 lg:!px-8 !py-6">
+      <PageBody className="!px-4 md:!px-8 !py-4 md:!py-6">
         {/* Activity rings + summary */}
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-5 mb-6">
-          <Card className="!bg-card !rounded-3xl !p-6">
-            <div className="flex items-center justify-between mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4 md:gap-5 mb-4 md:mb-6">
+          <Card className="!bg-card !rounded-3xl !p-4 md:!p-6">
+            <div className="flex items-center justify-between mb-4 md:mb-6">
               <div>
                 <div className="text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">Weekly activity</div>
-                <div className="text-lg font-bold text-ink mt-0.5">{format(startOfWeek(now, { weekStartsOn: 1 }), 'dd MMM')} — {format(endOfWeek(now, { weekStartsOn: 1 }), 'dd MMM')}</div>
+                <div className="text-md md:text-lg font-bold text-ink mt-0.5 tabular">{format(startOfWeek(now, { weekStartsOn: 1 }), 'dd MMM')} — {format(endOfWeek(now, { weekStartsOn: 1 }), 'dd MMM')}</div>
               </div>
-              <Link to="/goals" className="text-sm text-blue hover:brightness-110">Edit goals</Link>
+              <Link to="/goals" className="text-xs md:text-sm text-blue hover:brightness-110">Edit</Link>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-[260px_1fr] gap-8 items-center">
+            <div className="grid grid-cols-1 sm:grid-cols-[220px_1fr] md:grid-cols-[260px_1fr] gap-6 md:gap-8 items-center">
               <div className="justify-self-center relative">
-                <ActivityRings rings={rings} size={260} />
+                <div className="md:hidden">
+                  <ActivityRings rings={rings} size={200} />
+                </div>
+                <div className="hidden md:block">
+                  <ActivityRings rings={rings} size={260} />
+                </div>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-ink3 mb-1">This week</div>
-                  <div className="text-[40px] leading-none font-bold text-ink tabular tracking-[-0.03em]">{weeklyConsumption.toFixed(1)}</div>
+                  <div className="text-3xl md:text-[40px] leading-none font-bold text-ink tabular tracking-[-0.03em]">{weeklyConsumption.toFixed(1)}</div>
                   <div className="text-2xs text-ink3 mt-1.5 font-mono tabular">of {wGoal} std</div>
                 </div>
               </div>

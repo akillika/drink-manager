@@ -7,7 +7,7 @@ import { Session, DrinkLibraryItem } from '../types';
 import { format, differenceInMinutes } from 'date-fns';
 import {
   PageBody, Button, Field, Input, Select, Textarea,
-  IconRefresh, IconGlass, IconClock, IconChart, IconTarget, cx,
+  IconRefresh, IconGlass, IconClock, IconChart, IconTarget, IconClose, cx,
 } from '../components/ui';
 import { DEMO_MODE } from '../config/demo';
 import { DEMO_LIBRARY, DEMO_SESSIONS } from '../config/demoData';
@@ -186,18 +186,41 @@ export default function AddEntry() {
   const stdDrinks = alcoholMl / STANDARD_DRINK_ALCOHOL_ML;
 
   return (
-    <div>
-      <div className="sticky top-0 z-10 bg-bg2/85 backdrop-blur border-b border-separator px-6 lg:px-8 py-4 flex items-center justify-between rise">
-        <div>
+    <div className="pb-24 md:pb-0">
+      {/* Sticky header - mobile close button + title, desktop title + cancel */}
+      <div className="sticky top-0 md:top-0 z-10 bg-bg/95 md:bg-bg2/85 backdrop-blur border-b border-separator px-4 md:px-8 py-3 md:py-4 flex items-center justify-between rise">
+        <button onClick={() => navigate('/')} className="md:hidden inline-flex items-center justify-center w-9 h-9 -ml-1 rounded-xl text-ink2 hover:bg-card transition-colors" aria-label="Cancel">
+          <IconClose />
+        </button>
+        <div className="hidden md:block">
           <div className="text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">New</div>
           <h1 className="text-2xl font-bold text-ink tracking-[-0.02em]">Add drink</h1>
         </div>
-        <Button onClick={() => navigate('/')} className="!bg-card2 !border-separator">Cancel</Button>
+        <h1 className="md:hidden text-md font-bold text-ink tracking-[-0.01em]">Add drink</h1>
+        <Button onClick={() => navigate('/')} className="hidden md:inline-flex !bg-card2 !border-separator">Cancel</Button>
+        <div className="md:hidden w-9" />
       </div>
 
-      <PageBody className="!px-6 lg:!px-8 !py-6">
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5">
-          <div className="space-y-5">
+      {/* Mobile-only live summary strip - sticks under the header */}
+      <div className="md:hidden sticky top-[49px] z-10 bg-bg border-b border-separator px-4 py-3">
+        <div className="rounded-2xl p-3 flex items-center gap-3" style={{ background: `linear-gradient(160deg, ${currentColor}30 0%, var(--card) 65%)` }}>
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] uppercase tracking-[0.1em] font-semibold text-ink3">This drink</div>
+            <div className="flex items-baseline gap-1.5 mt-0.5">
+              <span className="text-2xl font-bold tabular tracking-[-0.02em]" style={{ color: currentColor }}>{stdDrinks.toFixed(2)}</span>
+              <span className="text-xs text-ink3 font-medium">std drinks</span>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-xs font-mono tabular text-ink2">{Math.round(amountMl)} ml · {alcoholPercentage}%</div>
+            <div className="text-2xs text-ink3 font-mono tabular">{alcoholMl.toFixed(1)} ml pure</div>
+          </div>
+        </div>
+      </div>
+
+      <PageBody className="!px-4 md:!px-8 !py-4 md:!py-6">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 md:gap-5">
+          <div className="space-y-4 md:space-y-5">
             {/* Library quick select */}
             {drinkLibrary.length > 0 && (
               <div className="bg-card rounded-3xl p-5">
@@ -351,8 +374,8 @@ export default function AddEntry() {
             </div>
           </div>
 
-          {/* Right: live summary */}
-          <div className="space-y-4">
+          {/* Desktop right: live summary — hidden on mobile since we have the sticky strip */}
+          <div className="hidden lg:block space-y-4">
             <div className="rounded-3xl p-6" style={{ background: `linear-gradient(160deg, ${currentColor}22 0%, var(--card) 65%)` }}>
               <div className="text-2xs uppercase tracking-[0.08em] font-semibold text-ink3 mb-3">This entry</div>
               <div className="text-5xl font-bold tabular tracking-[-0.03em]" style={{ color: currentColor }}>
@@ -368,7 +391,7 @@ export default function AddEntry() {
               </div>
             </div>
 
-            <Button type="submit" variant="primary" disabled={submitting} className="w-full !h-12 !text-md bg-pink text-white border-pink hover:brightness-110">
+            <Button type="submit" variant="primary" disabled={submitting} className="w-full !h-12 !text-md">
               {submitting ? 'Saving…' : 'Save drink'}
             </Button>
 
@@ -380,6 +403,18 @@ export default function AddEntry() {
           </div>
         </form>
       </PageBody>
+
+      {/* Mobile sticky save bar */}
+      <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-bg/95 backdrop-blur border-t border-separator px-4 py-3" style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={submitting}
+          className="w-full h-12 rounded-2xl bg-pink text-white font-semibold text-md flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-60"
+        >
+          {submitting ? 'Saving…' : `Save · ${stdDrinks.toFixed(2)} std`}
+        </button>
+      </div>
     </div>
   );
 }

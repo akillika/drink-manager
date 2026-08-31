@@ -138,22 +138,25 @@ export default function Sessions() {
 
   return (
     <div>
-      <div className="sticky top-0 z-10 bg-bg2/85 backdrop-blur border-b border-separator px-6 lg:px-8 py-4 flex items-center justify-between rise">
-        <div>
-          <div className="text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">Grouping</div>
-          <h1 className="text-2xl font-bold text-ink tracking-[-0.02em]">Sessions</h1>
+      <div className="sticky top-12 md:top-0 z-10 bg-bg/95 md:bg-bg2/85 backdrop-blur border-b border-separator px-4 md:px-8 py-3 md:py-4 flex items-center justify-between gap-3 rise">
+        <div className="min-w-0">
+          <div className="text-[10px] md:text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">Grouping</div>
+          <h1 className="text-lg md:text-2xl font-bold text-ink tracking-[-0.02em]">Sessions</h1>
         </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={handleAutoGroup} disabled={ungroupedCount < 2} className="!bg-card !border-separator hover:!bg-card2">
-            <IconRefresh /> Auto-group
+        <div className="flex items-center gap-2 shrink-0">
+          <Button onClick={handleAutoGroup} disabled={ungroupedCount < 2} className="!bg-card !border-separator hover:!bg-card2" size="sm">
+            <IconRefresh />
+            <span className="hidden md:inline">Auto-group</span>
           </Button>
-          <Button variant="primary" onClick={openCreate} className="bg-pink text-white border-pink hover:brightness-110">
-            <IconPlus /> New session
+          <Button variant="primary" onClick={openCreate} size="sm">
+            <IconPlus />
+            <span className="hidden md:inline">New session</span>
+            <span className="md:hidden">New</span>
           </Button>
         </div>
       </div>
 
-      <PageBody className="!px-6 lg:!px-8 !py-6">
+      <PageBody className="!px-4 md:!px-8 !py-4 md:!py-6">
         {loading ? (
           <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
         ) : sessions.length === 0 ? (
@@ -234,9 +237,11 @@ export default function Sessions() {
       </PageBody>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
-          <div className="relative bg-card rounded-3xl shadow-popover max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="relative bg-card rounded-t-3xl md:rounded-3xl shadow-popover w-full md:max-w-xl md:w-full max-h-[92vh] md:max-h-[90vh] overflow-hidden flex flex-col ink-in"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+            <div className="md:hidden mx-auto mt-2 mb-1 w-10 h-1 rounded-full bg-separator2" />
             <div className="flex items-center justify-between p-5 border-b border-separator">
               <h3 className="text-lg font-bold text-ink">{editingSession ? 'Edit session' : 'New session'}</h3>
               <button className="inline-flex items-center justify-center w-9 h-9 rounded-xl text-ink3 hover:text-ink hover:bg-card2 transition-colors" onClick={closeModal} title="Close"><IconClose /></button>

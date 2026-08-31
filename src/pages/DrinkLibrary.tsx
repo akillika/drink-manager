@@ -129,17 +129,19 @@ export default function DrinkLibrary() {
 
   return (
     <div>
-      <div className="sticky top-0 z-10 bg-bg2/85 backdrop-blur border-b border-separator px-6 lg:px-8 py-4 flex items-center justify-between rise">
-        <div>
-          <div className="text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">Presets</div>
-          <h1 className="text-2xl font-bold text-ink tracking-[-0.02em]">Library</h1>
+      <div className="sticky top-12 md:top-0 z-10 bg-bg/95 md:bg-bg2/85 backdrop-blur border-b border-separator px-4 md:px-8 py-3 md:py-4 flex items-center justify-between gap-3 rise">
+        <div className="min-w-0">
+          <div className="text-[10px] md:text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">Presets</div>
+          <h1 className="text-lg md:text-2xl font-bold text-ink tracking-[-0.02em]">Library</h1>
         </div>
-        <Button variant="primary" onClick={openCreate} className="bg-pink text-white border-pink hover:brightness-110">
-          <IconPlus /> Add drink
+        <Button variant="primary" onClick={openCreate} size="sm">
+          <IconPlus />
+          <span className="hidden md:inline">Add drink</span>
+          <span className="md:hidden">Add</span>
         </Button>
       </div>
 
-      <PageBody className="!px-6 lg:!px-8 !py-6">
+      <PageBody className="!px-4 md:!px-8 !py-4 md:!py-6">
         <div className="bg-card rounded-3xl p-4 mb-5 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
           <div className="flex items-center h-11 rounded-2xl bg-card2 px-4 gap-3">
             <IconSearch className="text-ink3" width={15} height={15} />
@@ -239,9 +241,11 @@ export default function DrinkLibrary() {
       </PageBody>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
-          <div className="relative bg-card rounded-3xl shadow-popover max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="relative bg-card rounded-t-3xl md:rounded-3xl shadow-popover w-full md:max-w-lg md:w-full max-h-[92vh] md:max-h-[90vh] overflow-hidden flex flex-col ink-in"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+            <div className="md:hidden mx-auto mt-2 mb-1 w-10 h-1 rounded-full bg-separator2" />
             <div className="flex items-center justify-between p-5 border-b border-separator">
               <h3 className="text-lg font-bold text-ink">{editingDrink ? 'Edit drink' : 'Add to library'}</h3>
               <button onClick={closeModal} className="inline-flex items-center justify-center w-9 h-9 rounded-xl text-ink3 hover:text-ink hover:bg-card2 transition-colors"><IconClose /></button>

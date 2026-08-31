@@ -131,26 +131,26 @@ export default function History() {
 
   return (
     <div>
-      <div className="sticky top-0 z-10 bg-bg2/85 backdrop-blur border-b border-separator px-6 lg:px-8 py-4 flex items-center justify-between rise">
-        <div>
-          <div className="text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">Timeline</div>
-          <h1 className="text-2xl font-bold text-ink tracking-[-0.02em]">History</h1>
+      <div className="sticky top-12 md:top-0 z-10 bg-bg/95 md:bg-bg2/85 backdrop-blur border-b border-separator px-4 md:px-8 py-3 md:py-4 flex items-center justify-between gap-3 rise">
+        <div className="min-w-0">
+          <div className="text-[10px] md:text-2xs uppercase tracking-[0.08em] font-semibold text-ink3">Timeline</div>
+          <h1 className="text-lg md:text-2xl font-bold text-ink tracking-[-0.02em]">History</h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3 shrink-0">
           <div className="inline-flex bg-bg3 rounded-full p-1">
             {filterPill('all', 'All')}
             {filterPill('week', 'Week')}
             {filterPill('month', 'Month')}
           </div>
-          <Link to="/add">
-            <Button variant="primary" className="bg-pink text-white border-pink hover:brightness-110">
+          <Link to="/add" className="hidden md:block">
+            <Button variant="primary">
               <IconPlus /> Add drink
             </Button>
           </Link>
         </div>
       </div>
 
-      <PageBody className="!px-6 lg:!px-8 !py-6">
+      <PageBody className="!px-4 md:!px-8 !py-4 md:!py-6">
         {loading ? (
           <div className="flex items-center justify-center py-24 text-sm text-ink3">Loading…</div>
         ) : grouped.size === 0 ? (
